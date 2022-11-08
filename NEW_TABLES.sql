@@ -1,196 +1,308 @@
 CREATE DATABASE IF NOT EXISTS SUPERMERCADO;
 
 CREATE TABLE `PAIS` (
-  `ID_PAIS` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_PAIS` VARCHAR(40) NOT NULL,
-  PRIMARY KEY (`ID_PAIS`)
+  `Cod_Pais` INT NOT NULL UNIQUE,
+  `Nombre_Pais` VARCHAR(40) NOT NULL,
+  PRIMARY KEY (`Cod_Pais`)
 );
 
 CREATE TABLE `PROVINCIA` (
-  `ID_PROVINCIA` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_PROVINCIA` VARCHAR(40) NOT NULL,
-  `ID_PAIS` INT NOT NULL,
-  PRIMARY KEY (`ID_PROVINCIA`),
-  FOREIGN KEY (`ID_PAIS`) REFERENCES `PAIS`(`ID_PAIS`)
+  `Cod_Provincia` INT NOT NULL UNIQUE,
+  `Nombre_Provincia` VARCHAR(40) NOT NULL,
+  `Cod_Pais` INT NOT NULL,
+  PRIMARY KEY (`Cod_Provincia`),
+  FOREIGN KEY (`Cod_Pais`) REFERENCES `PAIS`(`Cod_Pais`)
 );
 
 CREATE TABLE `CIUDAD` (
-  `ID_CIUDAD` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_CIUDAD` VARCHAR(40) NOT NULL,
-  `ID_PROVINCIA` INT NOT NULL,
-  PRIMARY KEY (`ID_CIUDAD`),
-  FOREIGN KEY (`ID_PROVINCIA`) REFERENCES `PROVINCIA`(`ID_PROVINCIA`)
+  `Cod_Ciudad` INT NOT NULL UNIQUE,
+  `Nombre_Ciudad` VARCHAR(40) NOT NULL,
+  `Cod_Provincia` INT NOT NULL,
+  PRIMARY KEY (`Cod_Ciudad`),
+  FOREIGN KEY (`Cod_Provincia`) REFERENCES `PROVINCIA`(`Cod_Provincia`)
 );
 
 CREATE TABLE `SUCURSAL` (
-  `ID_SUCURSAL` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_SUCURSAL` VARCHAR(40) NOT NULL,
-  `ID_CIUDAD` INT NOT NULL,
-  PRIMARY KEY (`ID_SUCURSAL`),
-  FOREIGN KEY (`ID_CIUDAD`) REFERENCES `CIUDAD`(`ID_CIUDAD`)
+  `Cod_Sucursal` INT NOT NULL UNIQUE,
+  `Nombre_Sucursal` VARCHAR(40) NOT NULL,
+  `Cod_Ciudad` INT NOT NULL,
+  PRIMARY KEY (`Cod_Sucursal`),
+  FOREIGN KEY (`Cod_Ciudad`) REFERENCES `CIUDAD`(`Cod_Ciudad`)
 );
 
 CREATE TABLE `SEXO` (
-  `ID_SEXO` INT NOT NULL AUTO_INCREMENT,
-  `DESCRIPTION_SEXO` VARCHAR(15) NOT NULL,
-  PRIMARY KEY (`ID_SEXO`)
+  `Cod_Sexo` INT NOT NULL UNIQUE,
+  `Descrip_Sexo` VARCHAR(15) NOT NULL,
+  PRIMARY KEY (`Cod_Sexo`)
 );
 
 CREATE TABLE `PERSONA` (
-  `ID_PERSONA` INT NOT NULL AUTO_INCREMENT,
-  `IDENTIFICACION` VARCHAR(20) NOT NULL UNIQUE,
-  `NOMBRE` VARCHAR(30) NOT NULL,
-  `APELLIDOS` VARCHAR(30) NOT NULL,
-  `FECHA_NACIMIENTO` DATE NOT NULL,
-  `DIRECCION_RESIDENCIA` VARCHAR(20) NOT NULL,
-  `ID_SEXO` INT NOT NULL,
-  `ID_CIUDAD` INT NOT NULL,
-  PRIMARY KEY (`ID_PERSONA`),
-  FOREIGN KEY (`ID_SEXO`) REFERENCES `SEXO`(`ID_SEXO`),
-  FOREIGN KEY (`ID_CIUDAD`) REFERENCES `CIUDAD`(`ID_CIUDAD`)
+  `Identificacion_Per` INT NOT NULL UNIQUE,
+  `Nombre` VARCHAR(30) NOT NULL,
+  `Apellidos` VARCHAR(30) NOT NULL,
+  `Fecha_Nacimiento` DATE NOT NULL,
+  `Direccion_Nacimiento` VARCHAR(20) NOT NULL,
+  `Cod_Sexo` INT NOT NULL,
+  `Cod_Ciudad` INT NOT NULL,
+  FOREIGN KEY (`Cod_Sexo`) REFERENCES `SEXO`(`Cod_Sexo`),
+  FOREIGN KEY (`Cod_Ciudad`) REFERENCES `CIUDAD`(`Cod_Ciudad`)
 );
 
 CREATE TABLE `PUESTO_LABORAL` (
-  `ID_PUESTO_LABORAL` INT NOT NULL AUTO_INCREMENT,
-  `DESCRIPCION` VARCHAR(30) NOT NULL,
-  `SALARIO_MENSUAL` FLOAT DEFAULT 0.0,
-  PRIMARY KEY (`ID_PUESTO_LABORAL`)
+  `Cod_Puesto_Laboral` INT NOT NULL UNIQUE,
+  `Descrip_Pues_Lab` VARCHAR(30) NOT NULL,
+  `Salario_Mensual` FLOAT  NOT NULL,
+  PRIMARY KEY (`Cod_Puesto_Laboral`)
 );
 
 CREATE TABLE `EMPLEADO` (
-  `ID_EMPLEADO` INT NOT NULL AUTO_INCREMENT,
-  `FECHA_CONTRATADO` DATE NOT NULL,
-  `HORAS_LABORALES` INT DEFAULT 0,
-  `ID_SUCURSAL` INT NOT NULL,
-  `ID_PUESTO_LABORAL` INT NOT NULL,
-  `ID_PERSONA` INT NOT NULL,
-  PRIMARY KEY (`ID_EMPLEADO`),
-  FOREIGN KEY (`ID_PUESTO_LABORAL`) REFERENCES `PUESTO_LABORAL`(`ID_PUESTO_LABORAL`),
-  FOREIGN KEY (`ID_PERSONA`) REFERENCES `PERSONA`(`ID_PERSONA`),
-  FOREIGN KEY (`ID_SUCURSAL`) REFERENCES `SUCURSAL`(`ID_SUCURSAL`)
+  `Cod_Empleado` INT NOT NULL UNIQUE,
+  `Fecha_Contratado` DATE NOT NULL,
+  `Horas_Laborales` INT NOT NULL,
+  `Cod_Sucursal` INT NOT NULL,
+  `Cod_Puesto_Laboral` INT NOT NULL,
+  `Identificacion_Per` INT NOT NULL,
+  PRIMARY KEY (`Cod_Empleado`),
+  FOREIGN KEY (`Cod_Puesto_Laboral`) REFERENCES `PUESTO_LABORAL`(`Cod_Puesto_Laboral`),
+  FOREIGN KEY (`Cod_Sucursal`) REFERENCES `SUCURSAL`(`Cod_Sucursal`)
 );
 
 CREATE TABLE `TIPO_USUARIO` (
-  `ID_TIPO_USUARIO` INT NOT NULL AUTO_INCREMENT,
-  `DESCRIPCION` VARCHAR(30) NOT NULL,
-  PRIMARY KEY (`ID_TIPO_USUARIO`)
+  `Cod_Tipo_Usuario` INT NOT NULL UNIQUE,
+  `Descrip_TipUsu` VARCHAR(30) NOT NULL,
+  PRIMARY KEY (`Cod_Tipo_Usuario`)
 );
 
 CREATE TABLE `USUARIO` (
-  `ID_USUARIO` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_USUARIO` VARCHAR(20) NOT NULL,
-  `CONTRASEÑA` VARCHAR(20) NOT NULL,
-  `ID_TIPO_USUARIO` INT NOT NULL,
-  `ID_PERSONA` INT NOT NULL,
-  PRIMARY KEY (`ID_USUARIO`),
-  FOREIGN KEY (`ID_TIPO_USUARIO`) REFERENCES `TIPO_USUARIO`(`ID_TIPO_USUARIO`),
-  FOREIGN KEY (`ID_PERSONA`) REFERENCES `PERSONA`(`ID_PERSONA`)
+  `Cod_Usuario` INT NOT NULL UNIQUE,
+  `Nombre_Usuario` VARCHAR(20) NOT NULL,
+  `Contraseña` VARCHAR(20) NOT NULL,
+  `Cod_Tipo_Usuario` INT NOT NULL,
+  `Identificacion_Per` INT NOT NULL,
+  PRIMARY KEY (`Cod_Usuario`),
+  FOREIGN KEY (`Cod_Tipo_Usuario`) REFERENCES `TIPO_USUARIO`(`Cod_Tipo_Usuario`)
 );
 
 CREATE TABLE `CLIENTE` (
-  `ID_CLIENTE` INT NOT NULL AUTO_INCREMENT,
-  `ID_USUARIO` INT NOT NULL,
-  PRIMARY KEY (`ID_CLIENTE`),
-  FOREIGN KEY (`ID_USUARIO`) REFERENCES `USUARIO`(`ID_USUARIO`)
+  `Cod_Cliente` INT NOT NULL UNIQUE,
+  `Cod_Usuario` INT NOT NULL,
+  PRIMARY KEY (`Cod_Cliente`),
+  FOREIGN KEY (`Cod_Usuario`) REFERENCES `USUARIO`(`Cod_Usuario`)
 );
 
 CREATE TABLE `PROVEEDOR` (
-  `ID_PROVEEDOR` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_PROVEEDOR` VARCHAR(50) NOT NULL,
-  `PORCENTAJE_G` FLOAT NOT NULL,
-  `ID_CIUDAD` INT NOT NULL,
-  PRIMARY KEY (`ID_PROVEEDOR`),
-  FOREIGN KEY (`ID_CIUDAD`) REFERENCES `CIUDAD`(`ID_CIUDAD`)
+  `Cod_Proveedor` INT NOT NULL UNIQUE,
+  `Nombre_Proveedor` VARCHAR(50) NOT NULL,
+  `Porcentaje_Ganancia` FLOAT NOT NULL,
+  `Cod_Ciudad` INT NOT NULL,
+  PRIMARY KEY (`Cod_Proveedor`),
+  FOREIGN KEY (`Cod_Ciudad`) REFERENCES `CIUDAD`(`Cod_Ciudad`)
 );
 
 CREATE TABLE `IMPUESTO` (
-  `ID_IMPUESTO` INT NOT NULL AUTO_INCREMENT,
-  `PORCENTAJE` FLOAT NOT NULL,
-  `DESCRIPCION` VARCHAR(20) NOT NULL,
-  KEY `ID` (`ID_IMPUESTO`)
+  `Cod_Impuesto` INT NOT NULL UNIQUE,
+  `Porcentaje_Imp` FLOAT NOT NULL,
+  `Descrip_Imp` VARCHAR(20) NOT NULL,
+  KEY `ID` (`Cod_Impuesto`)
 );
 
 CREATE TABLE `TIPO_PRODUCTO` (
-  `ID_TIPO_PRODUCTO` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_TIPO_PRODUCTO` VARCHAR(50) NOT NULL,
-  `DESCRIPCION_T_PRODU` VARCHAR(30) NOT NULL,
-  `ID_IMPUESTO` INT NOT NULL,
-  PRIMARY KEY (`ID_TIPO_PRODUCTO`),
-  FOREIGN KEY (`ID_IMPUESTO`) REFERENCES `IMPUESTO`(`ID_IMPUESTO`)
+  `Cod_Tipo_Producto` INT NOT NULL UNIQUE,
+  `Nombre_Tipo_Producto` VARCHAR(50) NOT NULL,
+  `Descrip_Tipo_Producto` VARCHAR(30) NOT NULL,
+  `Cod_Impuesto` INT NOT NULL,
+  PRIMARY KEY (`Cod_Tipo_Producto`),
+  FOREIGN KEY (`Cod_Impuesto`) REFERENCES `IMPUESTO`(`Cod_Impuesto`)
 );
 
 CREATE TABLE `FACTURA` (
-  `ID_FACTURA` INT NOT NULL AUTO_INCREMENT,
-  `FECHA_FACTURA` DATE NOT NULL,
-  `ID_CLIENTE` INT NOT NULL,
-  `ID_EMPLEADO` INT NOT NULL,
-  PRIMARY KEY (`ID_FACTURA`),
-  FOREIGN KEY (`ID_CLIENTE`) REFERENCES `CLIENTE`(`ID_CLIENTE`),
-  FOREIGN KEY (`ID_EMPLEADO`) REFERENCES `EMPLEADO`(`ID_EMPLEADO`)
+  `Num_Factura` INT NOT NULL UNIQUE,
+  `Fecha_Factura` DATE NOT NULL,
+  `Cod_Cliente` INT NOT NULL,
+  `Cod_Empleado` INT NOT NULL,
+  PRIMARY KEY (`Num_Factura`),
+  FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`),
+  FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`)
 );
 
 CREATE TABLE `PRODUCTO` (
-  `ID_PRODUCTO` INT NOT NULL AUTO_INCREMENT,
-  `NOMBRE_PRODUTO` VARCHAR(50) NOT NULL,
-  `FECHA_PRODUCCION` DATE NOT NULL,
-  `FECHA_VENCIMIENTO` DATE NOT NULL,
-  `PRECIO_VENTA` FLOAT DEFAULT 0.0,
-  `ID_TIPO_PRODUCTO` INT NOT NULL,
-  `CANT_MINIMA` INT DEFAULT 0 ,
-  `CANT_MAXIMA` INT DEFAULT 0,
-  PRIMARY KEY (`ID_PRODUCTO`),
-  FOREIGN KEY (`ID_TIPO_PRODUCTO`) REFERENCES `TIPO_PRODUCTO`(`ID_TIPO_PRODUCTO`)
+  `Cod_Producto` INT NOT NULL UNIQUE,
+  `Nombre_Producto` VARCHAR(50) NOT NULL,
+  `Cod_Tipo_Producto` INT NOT NULL,
+  `Cant_Minima` INT NOT NULL,
+  `Cant_Maxima` INT NOT NULL,
+  PRIMARY KEY (`Cod_Producto`),
+  FOREIGN KEY (`Cod_Tipo_Producto`) REFERENCES `TIPO_PRODUCTO`(`Cod_Tipo_Producto`)
 );
 
 CREATE TABLE `FACTURA_PRODUCTO` (
-  `ID_FACTURA` INT NOT NULL,
-  `ID_PRODUCTO` INT NOT NULL,
-  `CANT_PRODU` INT NOT NULL,
-  FOREIGN KEY (`ID_FACTURA`) REFERENCES `FACTURA`(`ID_FACTURA`),
-  FOREIGN KEY (`ID_PRODUCTO`) REFERENCES `PRODUCTO`(`ID_PRODUCTO`)
+  `Num_Factura` INT NOT NULL UNIQUE,
+  `Cod_Producto` INT NOT NULL UNIQUE,
+  `Cantidad_Producto` INT NOT NULL,
+  FOREIGN KEY (`Num_Factura`) REFERENCES `FACTURA`(`Num_Factura`),
+  FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`)
 );
 
 CREATE TABLE `TELEF_PERSO` (
-  `ID_PERSONA` INT NOT NULL,
-  `NUM_TELEF` VARCHAR(15) NOT NULL,
-  FOREIGN KEY (`ID_PERSONA`) REFERENCES `PERSONA`(`ID_PERSONA`)
+  `Identificacion_Per` INT NOT NULL UNIQUE,
+  `Num_Telef` VARCHAR(15)  NOT NULL
 );
 
-CREATE TABLE `BODEGA` (
-  `ID_BODEGA` INT NOT NULL AUTO_INCREMENT,
-  `ID_PRODUCTO` INT NOT NULL,
-  `ID_SUCURSAL` INT NOT NULL,
-  `PRECIO_COMPRA` FLOAT NOT NULL,
-  `ID_PROVEEDOR` INT NOT NULL,
-  `FECHA_COMPRA` DATE NOT NULL,
-  `CANTIDAD_ACTUAL` INT NOT NULL,
-  PRIMARY KEY (`ID_BODEGA`),
-  FOREIGN KEY (`ID_PRODUCTO`) REFERENCES `PRODUCTO`(`ID_PRODUCTO`),
-  FOREIGN KEY (`ID_SUCURSAL`) REFERENCES `SUCURSAL`(`ID_SUCURSAL`),
-  FOREIGN KEY (`ID_PROVEEDOR`) REFERENCES `PROVEEDOR`(`ID_PROVEEDOR`)
+CREATE TABLE `BODEGA_COMPRA` (
+  `Cod_BodegaCompra` INT NOT NULL UNIQUE,
+  `Cod_Producto` INT NOT NULL,
+  `Cod_Sucursal` INT NOT NULL,
+  `Precio_Compra` FLOAT NOT NULL,
+  `Cod_Proveedor` INT NOT NULL,
+  `Fecha_Compra` DATE NOT NULL,
+  `Cantidad_Comprada` INT NOT NULL,
+  `Fecha_Produccion` DATE NOT NULL,
+  `Fecha_Vencimiento` DATE NOT NULL,
+  PRIMARY KEY (`Cod_BodegaCompra`),
+  FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`),
+  FOREIGN KEY (`Cod_Sucursal`) REFERENCES `SUCURSAL`(`Cod_Sucursal`),
+  FOREIGN KEY (`Cod_Proveedor`) REFERENCES `PROVEEDOR`(`Cod_Proveedor`)
 );
 
 CREATE TABLE `CRIPTOCARTERA` (
-  `ID_CRIPTOCARTERA` INT NOT NULL AUTO_INCREMENT,
-  `ID_CLIENTE` INT NOT NULL,
-  `NUM_CARTERAC` VARCHAR(25) NOT NULL,
-  PRIMARY KEY (`ID_CRIPTOCARTERA`),
-  FOREIGN KEY (`ID_CLIENTE`) REFERENCES `CLIENTE`(`ID_CLIENTE`)
+  `Cod_Cliente` INT NOT NULL,
+  `Num_Cripto_Cartera` VARCHAR(25) NOT NULL,
+  FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
 CREATE TABLE `TARJETA_CREDITO` (
-  `ID_TARJETA_CREDITO` INT NOT NULL AUTO_INCREMENT,
-  `ID_CLIENTE` INT NOT NULL,
-  `NUM_TARJETA_CREDITO` VARCHAR(20) NOT NULL,
-  PRIMARY KEY (`ID_TARJETA_CREDITO`),
-  FOREIGN KEY (`ID_CLIENTE`) REFERENCES `CLIENTE`(`ID_CLIENTE`)
+  `Cod_CLiente` INT NOT NULL,
+  `Num_Tarjeta_Credito` VARCHAR(20) NOT NULL,
+  FOREIGN KEY (`Cod_CLiente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
 CREATE TABLE `CHEQUE` (
-  `ID_CHEQUE` INT NOT NULL AUTO_INCREMENT,
-  `ID_CLIENTE` INT NOT NULL,
-  `NUM_CHEQUE` VARCHAR(20) NOT NULL,
-  PRIMARY KEY (`ID_CHEQUE`),
-  FOREIGN KEY (`ID_CLIENTE`) REFERENCES `CLIENTE`(`ID_CLIENTE`)
+  `Cod_Cliente` INT NOT NULL,
+  `Num_Cheque` VARCHAR(20) NOT NULL,
+  FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
+/*----------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------CRUDs----------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------*/
+
+/*------------------------------------------------------------ PAIS ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_PAIS(pCodPais INT, pNombrePais varchar(40), pOperacion varchar(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO PAIS(Cod_Pais,Nombre_Pais)
+		VALUES(pCodPais,pNombrePais);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Pais, Nombre_Pais
+		FROM PAIS
+		WHERE Cod_Pais = pCodPais;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE PAIS
+		SET Nombre_Pais = pNombrePais
+		WHERE Cod_Pais = pCodPais;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM PAIS
+		WHERE Cod_Pais = pCodPais;
+	END IF;
+END;
+//
+
+
+/*------------------------------------------------------------ PROVINCIA ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_PROVINCIA(pCodProvincia INT, pNombreProvincia varchar(40), pCodPais INT, pOperacion varchar(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO PROVINCIA(Cod_Provincia, Nombre_Provincia, Cod_Pais)
+		VALUES(pCodProvincia, pNombreProvincia, pCodPais);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Provincia, Nombre_Provincia, Cod_Pais
+		FROM PROVINCIA
+		WHERE Cod_Provincia = pCodProvincia;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE PROVINCIA
+		SET Nombre_Provincia = pNombreProvincia
+		WHERE Cod_Provincia = pCodProvincia;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM PROVINCIA
+		WHERE Cod_Provincia = pCodProvincia;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ CIUDAD ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_CIUDAD(pCodCiudad INT, pNombreCiudad varchar(40), pCodProvincia INT, pOperacion varchar(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO CIUDAD(Cod_Ciudad, Nombre_Ciudad, Cod_Provincia)
+		VALUES(pCodCiudad, pNombreCiudad, pCodProvincia);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Ciudad, Nombre_Ciudad, Cod_Provincia
+		FROM CIUDAD
+		WHERE Cod_Ciudad = pCodCiudad;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE CIUDAD
+		SET Nombre_Ciudad = pNombreCiudad
+		WHERE Cod_Ciudad = pCodCiudad;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM CIUDAD
+		WHERE Cod_Ciudad = pCodCiudad;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ SUCURSAL ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_SUCURSAL(pCodSucursal INT, pNombreSucursal varchar(40), pCodCiudad INT, pOperacion varchar(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO SUCURSAL(Cod_Sucursal, Nombre_Sucursal, Cod_Ciudad)
+		VALUES(pCodSucursal, pNombreSucursal, pCodCiudad);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Sucursal, Nombre_Sucursal, Cod_Ciudad
+		FROM SUCURSAL
+		WHERE Cod_Sucursal = pCodSucursal;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE SUCURSAL
+		SET Nombre_Sucursal = pNombreSucursal
+		WHERE Cod_Sucursal = pCodSucursal;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM SUCURSAL
+		WHERE Cod_Sucursal = pCodSucursal;
+	END IF;
+END;
+//
+
+DELIMITER ;
+
+use supermercado;
+call CRUD_PAIS(506,'Costa Rica', 'CREATE');
+call CRUD_PAIS(1,'USA', 'CREATE');
+call CRUD_PROVINCIA(1,'San Jose',506,'CREATE');
+call CRUD_PROVINCIA(1, null, null, 'READ');
