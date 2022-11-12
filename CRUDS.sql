@@ -335,3 +335,284 @@ BEGIN
 	END IF;
 END;
 //
+
+/*------------------------------------------------------------ IMPUESTO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_IMPUESTO(pCodImpu INT, pPorcImpu FLOAT, pDescImpu VARCHAR(20),  pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO IMPUESTO(Cod_Impuesto, Porcentaje_Imp, Descrip_Imp)
+		VALUES(pCodImpu, pPorcImpu, pDescImpu);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Impuesto, Porcentaje_Imp, Descrip_Imp
+		FROM IMPUESTO
+		WHERE Cod_Impuesto = pCodImpu;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE IMPUESTO
+		SET Porcentaje_Imp = pPorcImpu, Descrip_Imp=Descrip_Imp
+		WHERE Cod_Impuesto = pCodImpu;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM IMPUESTO
+		WHERE Cod_Impuesto = pCodImpu;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ TIPO_PRODUCTO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_TIPPRODU(pCodTipProdu INT, pNomTipProdu VARCHAR(50), pDescrTipProdu VARCHAR(30),  pCodImpu INT, pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO TIPO_PRODUCTO(Cod_Tipo_Producto, Nombre_Tipo_Producto, Descrip_Tipo_Producto, Cod_Impuesto)
+		VALUES(pCodTipProdu, pNomTipProdu, pDescrTipProdu, pCodImpu);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Tipo_Producto, Nombre_Tipo_Producto, Descrip_Tipo_Producto, Cod_Impuesto
+		FROM TIPO_PRODUCTO
+		WHERE Cod_Tipo_Producto = pCodTipProdu;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE TIPO_PRODUCTO
+		SET  Nombre_Tipo_Producto=pNomTipProdu, Descrip_Tipo_Producto=pDescrTipProdu, Cod_Impuesto=pCodImpu
+		WHERE Cod_Tipo_Producto = pCodTipProdu;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM TIPO_PRODUCTO
+		WHERE Cod_Tipo_Producto = pCodTipProdu;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ FACTURA ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_FACTURA(pNumFact INT, pFecFact DATE, pCodCliente INT, pCodEmpleado INT, pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO FACTURA(Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado)
+		VALUES(pNumFact, pFecFact, pCodCliente, pCodEmpleado);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado
+		FROM FACTURA
+		WHERE Num_Factura = pNumFact;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE FACTURA
+		SET  Fecha_Factura=pFecFact, Cod_Cliente=pCodCliente, Cod_Empleado=pCodEmpleado
+		WHERE Num_Factura = pNumFact;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM FACTURA
+		WHERE Num_Factura = pNumFact;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ PRODUCTO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_PRODUCTO(pCodProdu INT,  pNombProdu VARCHAR(50), pCodTipProdu INT, pCantMin INT, pCantMax INT, pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO PRODUCTO(Cod_Producto, Nombre_Producto, Cod_Tipo_Producto, Cant_Minima, Cant_Maxima)
+		VALUES(pCodProdu, pNombProdu, pCodTipProdu, pCantMin, pCantMax);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Producto, Nombre_Producto, Cod_Tipo_Producto, Cant_Minima, Cant_Maxima
+		FROM PRODUCTO
+		WHERE Cod_Producto = pCodProdu;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE PRODUCTO
+		SET  Nombre_Producto=pNombProdu, Cod_Tipo_Producto=pCodTipProdu, Cant_Minima=pCantMin, Cant_Maxima=pCantMax
+		WHERE Cod_Producto = pCodProdu;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM PRODUCTO
+		WHERE Cod_Producto = pCodProdu;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ FACTURA_PRODUCTO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_FACTxPRODU(pNumFact INT, pCodProdu INT, pCantProdu INT,  pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO FACTURA_PRODUCTO(Num_Factura, Cod_Producto, Cantidad_Producto)
+		VALUES(pNumFact, pCodProdu, pCantProdu);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Num_Factura, Cod_Producto, Cantidad_Producto
+		FROM FACTURA_PRODUCTO
+		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu ;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE FACTURA_PRODUCTO
+		SET Cantidad_Producto = pCantProdu
+		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM FACTURA_PRODUCTO
+		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ TELEF_PERSO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_TELEFPERSO(pIdentPers INT, pNumTel VARCHAR(15), pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO TELEF_PERSO(Identificacion_Per, Num_Telef)
+		VALUES(pIdentPers, pNumTel);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Identificacion_Per, Num_Telef
+		FROM TELEF_PERSO
+		WHERE Identificacion_Per = pIdentPers;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE TELEF_PERSO
+		SET Num_Telef = pNumTel
+		WHERE Identificacion_Per = pIdentPers;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM TELEF_PERSO
+		WHERE Identificacion_Per = pIdentPers;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ BODEGA_COMPRA ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_BODECOMPRA(pCodBodega INT, pCodProdu INT, pCodSucursal INT, 
+										pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra INT, pCantCompra INT, pFechaProduc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO BODEGA_COMPRA(Cod_BodegaCompra, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento)
+        VALUES(pCodBodega, pCodProdu, pCodSucursal, pPrecioCompra, pCodProveedor, pFechaCompra, pCantCompra, pFechaProduc, pFechaVenci);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_BodegaCompra, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento
+		FROM BODEGA_COMPRA
+		WHERE Cod_BodegaCompra = pCodBodega;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE BODEGA_COMPRA
+		SET Cod_Producto=pCodProdu, Cod_Sucursal=pCodSucursal, Precio_Compra=pPrecioCompra, Cod_Proveedor=pCodProveedor, Fecha_Compra=pFechaCompra, Cantidad_Comprada=pCantCompra, Fecha_Produccion=pFechaProduc ,Fecha_Vencimiento=pFechaVenci
+		WHERE Cod_BodegaCompra = pCodBodega;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM BODEGA_COMPRA
+		WHERE Cod_BodegaCompra = pCodBodega;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ CRIPTOCARTERA ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_CRIPTOCARTERA(pCodCliente INT, pNumCriptoCart VARCHAR(25), pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO CRIPTOCARTERA(Cod_Cliente, Num_Cripto_Cartera)
+		VALUES(pCodCliente, pNumCriptoCart);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Cliente, Num_Cripto_Cartera
+		FROM CRIPTOCARTERA
+		WHERE Cod_Cliente = pCodCliente;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE CRIPTOCARTERA
+		SET Num_Cripto_Cartera = pNumCriptoCart
+		WHERE Cod_Cliente = pCodCliente;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM CRIPTOCARTERA
+		WHERE Cod_Cliente = pCodCliente;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ TARJETA_CREDITO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_TARJECREDI(pCodCliente INT, pNumTarjeCredi VARCHAR(20), pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO TARJETA_CREDITO(Cod_Cliente, Num_Tarjeta_Credito)
+		VALUES(pCodCliente, pNumTarjeCredi);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Cliente, Num_Tarjeta_Credito
+		FROM TARJETA_CREDITO
+		WHERE Cod_Cliente = pCodCliente;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE TARJETA_CREDITO
+		SET Num_Tarjeta_Credito = pNumTarjeCredi
+		WHERE Cod_Cliente = pCodCliente;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM TARJETA_CREDITO
+		WHERE Cod_Cliente = pCodCliente;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ CHEQUE ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_CHEQUE(pCodCliente INT, pNumCheque VARCHAR(20), pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO CHEQUE(Cod_Cliente, Num_Cheque)
+		VALUES(pCodCliente, pNumCheque);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Cliente, Num_Cheque
+		FROM CHEQUE
+		WHERE Cod_Cliente = pCodCliente;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE CHEQUE
+		SET Num_Cheque = pNumCheque
+		WHERE Cod_Cliente = pCodCliente;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM CHEQUE
+		WHERE Cod_Cliente = pCodCliente;
+	END IF;
+END;
+//

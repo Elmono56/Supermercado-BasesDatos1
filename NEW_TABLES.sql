@@ -144,7 +144,7 @@ CREATE TABLE `FACTURA_PRODUCTO` (
 );
 
 CREATE TABLE `TELEF_PERSO` (
-  `Identificacion_Per` INT NOT NULL UNIQUE,
+  `Identificacion_Per` INT NOT NULL,
   `Num_Telef` VARCHAR(15)  NOT NULL
 );
 
@@ -171,9 +171,9 @@ CREATE TABLE `CRIPTOCARTERA` (
 );
 
 CREATE TABLE `TARJETA_CREDITO` (
-  `Cod_CLiente` INT NOT NULL,
+  `Cod_Cliente` INT NOT NULL,
   `Num_Tarjeta_Credito` VARCHAR(20) NOT NULL,
-  FOREIGN KEY (`Cod_CLiente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
+  FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
 CREATE TABLE `CHEQUE` (
