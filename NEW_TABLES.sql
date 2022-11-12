@@ -300,7 +300,7 @@ END;
 //
 
 DELIMITER ;
-
+/*------------------------------------------------------------ PRUEBAS ------------------------------------------------------------*/
 use supermercado;
 call CRUD_PAIS(506,'Costa Rica', 'CREATE');
 call CRUD_PAIS(1,'USA', 'CREATE');
