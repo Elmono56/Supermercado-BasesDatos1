@@ -41,7 +41,7 @@ CREATE TABLE `PERSONA` (
   `Nombre` VARCHAR(30) NOT NULL,
   `Apellidos` VARCHAR(30) NOT NULL,
   `Fecha_Nacimiento` DATE NOT NULL,
-  `Direccion_Nacimiento` VARCHAR(20) NOT NULL,
+  `Direccion_Residencia` VARCHAR(20) NOT NULL,
   `Cod_Sexo` INT NOT NULL,
   `Cod_Ciudad` INT NOT NULL,
   FOREIGN KEY (`Cod_Sexo`) REFERENCES `SEXO`(`Cod_Sexo`),
@@ -58,10 +58,10 @@ CREATE TABLE `PUESTO_LABORAL` (
 CREATE TABLE `EMPLEADO` (
   `Cod_Empleado` INT NOT NULL UNIQUE,
   `Fecha_Contratado` DATE NOT NULL,
-  `Horas_Laborales` INT NOT NULL,
+  `Horas_Laborales` FLOAT NOT NULL,
   `Cod_Sucursal` INT NOT NULL,
   `Cod_Puesto_Laboral` INT NOT NULL,
-  `Identificacion_Per` INT NOT NULL,
+  `Identificacion_Per` INT NOT NULL UNIQUE,
   PRIMARY KEY (`Cod_Empleado`),
   FOREIGN KEY (`Cod_Puesto_Laboral`) REFERENCES `PUESTO_LABORAL`(`Cod_Puesto_Laboral`),
   FOREIGN KEY (`Cod_Sucursal`) REFERENCES `SUCURSAL`(`Cod_Sucursal`)
@@ -78,14 +78,14 @@ CREATE TABLE `USUARIO` (
   `Nombre_Usuario` VARCHAR(20) NOT NULL,
   `Contraseña` VARCHAR(20) NOT NULL,
   `Cod_Tipo_Usuario` INT NOT NULL,
-  `Identificacion_Per` INT NOT NULL,
+  `Identificacion_Per` INT NOT NULL UNIQUE,
   PRIMARY KEY (`Cod_Usuario`),
   FOREIGN KEY (`Cod_Tipo_Usuario`) REFERENCES `TIPO_USUARIO`(`Cod_Tipo_Usuario`)
 );
 
 CREATE TABLE `CLIENTE` (
   `Cod_Cliente` INT NOT NULL UNIQUE,
-  `Cod_Usuario` INT NOT NULL,
+  `Cod_Usuario` INT NOT NULL UNIQUE,
   PRIMARY KEY (`Cod_Cliente`),
   FOREIGN KEY (`Cod_Usuario`) REFERENCES `USUARIO`(`Cod_Usuario`)
 );
@@ -120,6 +120,7 @@ CREATE TABLE `FACTURA` (
   `Fecha_Factura` DATE NOT NULL,
   `Cod_Cliente` INT NOT NULL,
   `Cod_Empleado` INT NOT NULL,
+  `Metodo_Pago` VARCHAR(15) NOT NULL,
   PRIMARY KEY (`Num_Factura`),
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`),
   FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`)
@@ -136,20 +137,25 @@ CREATE TABLE `PRODUCTO` (
 );
 
 CREATE TABLE `FACTURA_PRODUCTO` (
-  `Num_Factura` INT NOT NULL UNIQUE,
-  `Cod_Producto` INT NOT NULL UNIQUE,
+  `Num_Factura` INT NOT NULL,
+  `Cod_Producto` INT NOT NULL,
   `Cantidad_Producto` INT NOT NULL,
+  `Porcentaje_Desc`  FLOAT NOT NULL,
+  `Motivo_Desc` VARCHAR(15),
   FOREIGN KEY (`Num_Factura`) REFERENCES `FACTURA`(`Num_Factura`),
   FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`)
 );
 
 CREATE TABLE `TELEF_PERSO` (
   `Identificacion_Per` INT NOT NULL,
-  `Num_Telef` VARCHAR(15)  NOT NULL
+  `Num_Telef` VARCHAR(15)  NOT NULL,
+  `Contador_Telef` INT AUTO_INCREMENT NOT NULL,
+  PRIMARY KEY ( `Contador_Telef`),
+  FOREIGN KEY (`Identificacion_Per`) REFERENCES `PERSONA`(`Identificacion_Per`)
 );
 
-CREATE TABLE `BODEGA_COMPRA` (
-  `Cod_BodegaCompra` INT NOT NULL UNIQUE,
+CREATE TABLE `BODEGA_SUCURSAL_PRODUCTO` (
+  `Cod_Bode_Sucu_Produ` INT AUTO_INCREMENT NOT NULL,
   `Cod_Producto` INT NOT NULL,
   `Cod_Sucursal` INT NOT NULL,
   `Precio_Compra` FLOAT NOT NULL,
@@ -158,7 +164,7 @@ CREATE TABLE `BODEGA_COMPRA` (
   `Cantidad_Comprada` INT NOT NULL,
   `Fecha_Produccion` DATE NOT NULL,
   `Fecha_Vencimiento` DATE NOT NULL,
-  PRIMARY KEY (`Cod_BodegaCompra`),
+  PRIMARY KEY (`Cod_Bode_Sucu_Produ`),
   FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`),
   FOREIGN KEY (`Cod_Sucursal`) REFERENCES `SUCURSAL`(`Cod_Sucursal`),
   FOREIGN KEY (`Cod_Proveedor`) REFERENCES `PROVEEDOR`(`Cod_Proveedor`)
@@ -167,18 +173,24 @@ CREATE TABLE `BODEGA_COMPRA` (
 CREATE TABLE `CRIPTOCARTERA` (
   `Cod_Cliente` INT NOT NULL,
   `Num_Cripto_Cartera` VARCHAR(25) NOT NULL,
+  `Contador_CriptoCar` INT AUTO_INCREMENT NOT NULL,
+  PRIMARY KEY (  `Contador_CriptoCar`),
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
 CREATE TABLE `TARJETA_CREDITO` (
   `Cod_Cliente` INT NOT NULL,
   `Num_Tarjeta_Credito` VARCHAR(20) NOT NULL,
+  `Contador_TarjCre` INT AUTO_INCREMENT NOT NULL,
+  PRIMARY KEY ( `Contador_TarjCre`),
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
 CREATE TABLE `CHEQUE` (
   `Cod_Cliente` INT NOT NULL,
   `Num_Cheque` VARCHAR(20) NOT NULL,
+  `Contador_Cheque` INT AUTO_INCREMENT NOT NULL,
+  PRIMARY KEY ( `Contador_Cheque`),
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
@@ -202,7 +214,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE PAIS
-		SET Nombre_Pais = pNombrePais
+		SET Nombre_Pais = IFNULL( pNombrePais, Nombre_Pais)
 		WHERE Cod_Pais = pCodPais;
 	END IF;
     
@@ -231,7 +243,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE PROVINCIA
-		SET Nombre_Provincia = pNombreProvincia
+		SET Nombre_Provincia = IFNULL(pNombreProvincia, Nombre_Provincia)
 		WHERE Cod_Provincia = pCodProvincia;
 	END IF;
     
@@ -259,7 +271,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE CIUDAD
-		SET Nombre_Ciudad = pNombreCiudad
+		SET Nombre_Ciudad = IFNULL(pNombreCiudad, Nombre_Ciudad)
 		WHERE Cod_Ciudad = pCodCiudad;
 	END IF;
     
@@ -287,7 +299,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE SUCURSAL
-		SET Nombre_Sucursal = pNombreSucursal
+		SET Nombre_Sucursal = IFNULL(pNombreSucursal, Nombre_Sucursal)
 		WHERE Cod_Sucursal = pCodSucursal;
 	END IF;
     
@@ -315,7 +327,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE SEXO
-		SET Descrip_Sexo = pDescripSexo
+		SET Descrip_Sexo = IFNULL(pDescripSexo, Descrip_Sexo)
 		WHERE Cod_Sexo = pCodSexo;
 	END IF;
     
@@ -332,19 +344,19 @@ CREATE PROCEDURE CRUD_PERSONA(pIdentPers INT, pNombre VARCHAR(30), pApellidos VA
 										pFechaNaci DATE, pDirecResi VARCHAR(20), pCodSexo INT, pCodCiudad INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PERSONA(Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Nacimiento, Cod_Sexo, Cod_Ciudad)
-		VALUES(pIdentPers, pNombre, pApellidos, pFechaNaci, pDirecNaci, pCodSexo, pCodCiudad);
+		INSERT INTO PERSONA(Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Residencia, Cod_Sexo, Cod_Ciudad)
+		VALUES(pIdentPers, pNombre, pApellidos, pFechaNaci, pDirecResi, pCodSexo, pCodCiudad);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Nacimiento, Cod_Sexo, Cod_Ciudad
+		SELECT Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Residencia, Cod_Sexo, Cod_Ciudad
 		FROM PERSONA
 		WHERE Identificacion_Per = pIdentPers;
   END IF;
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE SEXO
-		SET Nombre=pNombre, Apellidos=pApellidos, Fecha_Nacimiento=pFechaNaci, Direccion_Nacimiento=pDirecNaci, Cod_Sexo=pCodSexo, Cod_Ciudad=pCodCiudad
+		SET Nombre=IFNULL(pNombre, Nombre), Apellidos=IFNULL(pApellidos, Apellidos),Direccion_Residencia=IFNULL(pDirecResi,Direccion_Residencia), Cod_Sexo=IFNULL(pCodSexo,Cod_Sexo), Cod_Ciudad=IFNULL(pCodCiudad,Cod_Ciudad)
 		WHERE Identificacion_Per = pIdentPers;
 	END IF;
     
@@ -372,7 +384,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE PUESTO_LABORAL
-		SET  Descrip_Pues_Lab=pDescPuLaboral, Salario_Mensual=pSalarioMe
+		SET  Descrip_Pues_Lab=IFNULL(pDescPuLaboral,Descrip_Pues_Lab), Salario_Mensual=IFNULL(pSalarioMe,Salario_Mensual)
 		WHERE Cod_Puesto_Laboral = pCodPuLaboral;
 	END IF;
     
@@ -385,7 +397,7 @@ END;
 
 /*------------------------------------------------------------ EMPLEADO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_EMPLEADO(pCodEmpleado INT, pFechaContr DATE, pHorasLab INT, pCodSucursal INT, pCodPuLaboral INT, pIdentPers INT , pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_EMPLEADO(pCodEmpleado INT, pFechaContr DATE, pHorasLab FLOAT, pCodSucursal INT, pCodPuLaboral INT, pIdentPers INT , pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO EMPLEADO(Cod_Empleado, Fecha_Contratado, Horas_Laborales, Cod_Sucursal, Cod_Puesto_Laboral, Identificacion_Per)
@@ -400,7 +412,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE EMPLEADO
-		SET  Fecha_Contratado=pFechaContr, Horas_Laborales=pHorasLab, Cod_Sucursal=pCodSucursal, Cod_Puesto_Laboral=pCodPuLaboral, Identificacion_Per=pIdentPers
+		SET  Horas_Laborales=IFNULL(pHorasLab, Horas_Laborales), Cod_Sucursal=IFNULL(pCodSucursal,Cod_Sucursal), Cod_Puesto_Laboral=IFNULL(pCodPuLaboral,Cod_Puesto_Laboral)
 		WHERE Cod_Empleado = pCodEmpleado;
 	END IF;
     
@@ -428,7 +440,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE TIPO_USUARIO
-		SET  Descrip_TipUsu=pDescTipUsu
+		SET  Descrip_TipUsu=IFNULL(pDescTipUsu,Descrip_TipUsu)
 		WHERE Cod_Tipo_Usuario = pCodTipUsu;
 	END IF;
     
@@ -456,7 +468,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE USUARIO
-		SET  Nombre_Usuario=pNombUsu, Contraseña=pContra, Cod_Tipo_Usuario=pCodTipUsu, Identificacion_Per=pIdentPers
+		SET  Nombre_Usuario=IFNULL(pNombUsu,Nombre_Usuario), Contraseña=IFNULL(pContra,Contraseña), Cod_Tipo_Usuario=IFNULL(pCodTipUsu,Cod_Tipo_Usuario)
 		WHERE Cod_Usuario = pCodUsu;
 	END IF;
     
@@ -481,12 +493,8 @@ BEGIN
 		FROM CLIENTE
 		WHERE Cod_Cliente = pCodCliente;
   END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE CLIENTE
-		SET Descrip_Sexo = pDescripSexo
-		WHERE Cod_Usuario = pCodUsu;
-	END IF;
+	
+    #no tiene nada para actualizar
     
 	IF (pOperacion = 'DELETE') THEN
 		DELETE FROM CLIENTE
@@ -512,7 +520,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE PROVEEDOR
-		SET Nombre_Proveedor = pNomProvee, Porcentaje_Ganancia = pPorcentGan, Cod_Ciudad = pCodCiudad
+		SET Nombre_Proveedor = IFNULL(pNomProvee,Nombre_Proveedor), Porcentaje_Ganancia = IFNULL(pPorcentGan,Porcentaje_Ganancia), Cod_Ciudad = IFNULL(pCodCiudad,Cod_Ciudad)
 		WHERE Cod_Proveedor = pCodProveedor;
 	END IF;
     
@@ -540,7 +548,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE IMPUESTO
-		SET Porcentaje_Imp = pPorcImpu, Descrip_Imp=Descrip_Imp
+		SET Porcentaje_Imp = IFNULL(pPorcImpu,Porcentaje_Imp), Descrip_Imp=IFNULL(Descrip_Imp,Descrip_Imp)
 		WHERE Cod_Impuesto = pCodImpu;
 	END IF;
     
@@ -568,7 +576,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE TIPO_PRODUCTO
-		SET  Nombre_Tipo_Producto=pNomTipProdu, Descrip_Tipo_Producto=pDescrTipProdu, Cod_Impuesto=pCodImpu
+		SET  Nombre_Tipo_Producto=IFNULL(pNomTipProdu,Nombre_Tipo_Producto), Descrip_Tipo_Producto=IFNULL(pDescrTipProdu,Descrip_Tipo_Producto), Cod_Impuesto=IFNULL(pCodImpu,Cod_Impuesto)
 		WHERE Cod_Tipo_Producto = pCodTipProdu;
 	END IF;
     
@@ -581,25 +589,25 @@ END;
 
 /*------------------------------------------------------------ FACTURA ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_FACTURA(pNumFact INT, pFecFact DATE, pCodCliente INT, pCodEmpleado INT, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_FACTURA(pNumFact INT, pFecFact DATE, pCodCliente INT, pCodEmpleado INT, pMetodoPago VARCHAR(15), pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO FACTURA(Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado)
-		VALUES(pNumFact, pFecFact, pCodCliente, pCodEmpleado);
+		INSERT INTO FACTURA(Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago)
+		VALUES(pNumFact, pFecFact, pCodCliente, pCodEmpleado, pMetodoPago);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado
+		SELECT Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago
 		FROM FACTURA
 		WHERE Num_Factura = pNumFact;
   END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
+  
+ IF (pOperacion = 'UPDATE')  THEN
 		UPDATE FACTURA
-		SET  Fecha_Factura=pFecFact, Cod_Cliente=pCodCliente, Cod_Empleado=pCodEmpleado
+		SET Metodo_Pago = IFNULL(pMetodoPago,Metodo_Pago)
 		WHERE Num_Factura = pNumFact;
 	END IF;
-    
+  
 	IF (pOperacion = 'DELETE') THEN
 		DELETE FROM FACTURA
 		WHERE Num_Factura = pNumFact;
@@ -624,7 +632,7 @@ BEGIN
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE PRODUCTO
-		SET  Nombre_Producto=pNombProdu, Cod_Tipo_Producto=pCodTipProdu, Cant_Minima=pCantMin, Cant_Maxima=pCantMax
+		SET  Nombre_Producto=IFNULL(pNombProdu,Nombre_Producto), Cod_Tipo_Producto=IFNULL(pCodTipProdu,Cod_Tipo_Producto), Cant_Minima=IFNULL(pCantMin,Cant_Minima), Cant_Maxima=IFNULL(pCantMax,Cant_Maxima)
 		WHERE Cod_Producto = pCodProdu;
 	END IF;
     
@@ -637,22 +645,22 @@ END;
 
 /*------------------------------------------------------------ FACTURA_PRODUCTO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_FACTxPRODU(pNumFact INT, pCodProdu INT, pCantProdu INT,  pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_FACTxPRODU(pNumFact INT, pCodProdu INT, pCantProdu INT, pPorcenDesc FLOAT, pMotivoDesc VARCHAR(15),  pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO FACTURA_PRODUCTO(Num_Factura, Cod_Producto, Cantidad_Producto)
-		VALUES(pNumFact, pCodProdu, pCantProdu);
+		INSERT INTO FACTURA_PRODUCTO(Num_Factura, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
+		VALUES(pNumFact, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Num_Factura, Cod_Producto, Cantidad_Producto
+		SELECT Num_Factura, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc
 		FROM FACTURA_PRODUCTO
 		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu ;
   END IF;
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE FACTURA_PRODUCTO
-		SET Cantidad_Producto = pCantProdu
+		SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
 		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu;
 	END IF;
     
@@ -665,7 +673,7 @@ END;
 
 /*------------------------------------------------------------ TELEF_PERSO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_TELEFPERSO(pIdentPers INT, pNumTel VARCHAR(15), pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_TELEFPERSO(pIdentPers INT, pNumTel VARCHAR(15), pContTelef INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO TELEF_PERSO(Identificacion_Per, Num_Telef)
@@ -673,15 +681,15 @@ BEGIN
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Identificacion_Per, Num_Telef
+		SELECT Identificacion_Per, Num_Telef, Contador_Telef
 		FROM TELEF_PERSO
 		WHERE Identificacion_Per = pIdentPers;
   END IF;
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE TELEF_PERSO
-		SET Num_Telef = pNumTel
-		WHERE Identificacion_Per = pIdentPers;
+		SET Num_Telef = IFNULL(pNumTel,Num_Telef)
+		WHERE Identificacion_Per = pIdentPers AND Contador_Telef=pContTelef;
 	END IF;
     
 	IF (pOperacion = 'DELETE') THEN
@@ -691,38 +699,39 @@ BEGIN
 END;
 //
 
-/*------------------------------------------------------------ BODEGA_COMPRA ------------------------------------------------------------*/
+/*------------------------------------------------------------ BODEGA_SUCURSAL_PRODUCTO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_BODECOMPRA(pCodBodega INT, pCodProdu INT, pCodSucursal INT, 
+CREATE PROCEDURE CRUD_BODESUCUPRODU(pCodBodega INT, pCodProdu INT, pCodSucursal INT, 
 										pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra INT, pCantCompra INT, pFechaProduc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO BODEGA_COMPRA(Cod_BodegaCompra, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento)
+		INSERT INTO BODEGA_SUCURSAL_PRODUCTO(Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento)
         VALUES(pCodBodega, pCodProdu, pCodSucursal, pPrecioCompra, pCodProveedor, pFechaCompra, pCantCompra, pFechaProduc, pFechaVenci);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Cod_BodegaCompra, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento
-		FROM BODEGA_COMPRA
-		WHERE Cod_BodegaCompra = pCodBodega;
+		SELECT Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento
+		FROM BODEGA_SUCURSAL_PRODUCTO
+		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
   END IF;
 
 	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE BODEGA_COMPRA
-		SET Cod_Producto=pCodProdu, Cod_Sucursal=pCodSucursal, Precio_Compra=pPrecioCompra, Cod_Proveedor=pCodProveedor, Fecha_Compra=pFechaCompra, Cantidad_Comprada=pCantCompra, Fecha_Produccion=pFechaProduc ,Fecha_Vencimiento=pFechaVenci
-		WHERE Cod_BodegaCompra = pCodBodega;
+		UPDATE BODEGA_SUCURSAL_PRODUCTO
+		SET Cod_Producto=IFNULL(pCodProdu,Cod_Producto), Cod_Sucursal=IFNULL(pCodSucursal,Cod_Sucursal), Precio_Compra=IFNULL(pPrecioCompra,Precio_Compra), Cod_Proveedor=IFNULL(pCodProveedor,Cod_Proveedor), 
+				Fecha_Compra=IFNULL(pFechaCompra,Fecha_Compra), Cantidad_Comprada=IFNULL(pCantCompra,Cantidad_Comprada), Fecha_Produccion=IFNULL(pFechaProduc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
+		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
 	END IF;
     
 	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM BODEGA_COMPRA
-		WHERE Cod_BodegaCompra = pCodBodega;
+		DELETE FROM BODEGA_SUCURSAL_PRODUCTO
+		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
 	END IF;
 END;
 //
 
 /*------------------------------------------------------------ CRIPTOCARTERA ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_CRIPTOCARTERA(pCodCliente INT, pNumCriptoCart VARCHAR(25), pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_CRIPTOCARTERA(pCodCliente INT, pNumCriptoCart VARCHAR(25), pContCriptoC INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO CRIPTOCARTERA(Cod_Cliente, Num_Cripto_Cartera)
@@ -730,27 +739,27 @@ BEGIN
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Cliente, Num_Cripto_Cartera
+		SELECT Cod_Cliente, Num_Cripto_Cartera, Contador_CriptoCar
 		FROM CRIPTOCARTERA
 		WHERE Cod_Cliente = pCodCliente;
   END IF;
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE CRIPTOCARTERA
-		SET Num_Cripto_Cartera = pNumCriptoCart
-		WHERE Cod_Cliente = pCodCliente;
+		SET Num_Cripto_Cartera = IFNULL(pNumCriptoCart,Num_Cripto_Cartera)
+		WHERE Cod_Cliente = pCodCliente AND Contador_CriptoCar = pContCriptoC;
 	END IF;
     
 	IF (pOperacion = 'DELETE') THEN
 		DELETE FROM CRIPTOCARTERA
-		WHERE Cod_Cliente = pCodCliente;
+		WHERE Cod_Cliente = pCodCliente AND Contador_CriptoCar = pContCriptoC;
 	END IF;
 END;
 //
 
 /*------------------------------------------------------------ TARJETA_CREDITO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_TARJECREDI(pCodCliente INT, pNumTarjeCredi VARCHAR(20), pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_TARJECREDI(pCodCliente INT, pNumTarjeCredi VARCHAR(20), pContTarjeCre INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO TARJETA_CREDITO(Cod_Cliente, Num_Tarjeta_Credito)
@@ -758,27 +767,27 @@ BEGIN
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Cliente, Num_Tarjeta_Credito
+		SELECT Cod_Cliente, Num_Tarjeta_Credito, Contador_TarjCre
 		FROM TARJETA_CREDITO
 		WHERE Cod_Cliente = pCodCliente;
   END IF;
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE TARJETA_CREDITO
-		SET Num_Tarjeta_Credito = pNumTarjeCredi
-		WHERE Cod_Cliente = pCodCliente;
+		SET Num_Tarjeta_Credito = IFNULL(pNumTarjeCredi,Num_Tarjeta_Credito)
+		WHERE Cod_Cliente = pCodCliente AND Contador_TarjCre = pContTarjeCre;
 	END IF;
     
 	IF (pOperacion = 'DELETE') THEN
 		DELETE FROM TARJETA_CREDITO
-		WHERE Cod_Cliente = pCodCliente;
+		WHERE Cod_Cliente = pCodCliente AND Contador_TarjCre = pContTarjeCre;
 	END IF;
 END;
 //
 
 /*------------------------------------------------------------ CHEQUE ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_CHEQUE(pCodCliente INT, pNumCheque VARCHAR(20), pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_CHEQUE(pCodCliente INT, pNumCheque VARCHAR(20), pContCheque INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO CHEQUE(Cod_Cliente, Num_Cheque)
@@ -786,20 +795,20 @@ BEGIN
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Cliente, Num_Cheque
+		SELECT Cod_Cliente, Num_Cheque, Contador_Cheque
 		FROM CHEQUE
 		WHERE Cod_Cliente = pCodCliente;
   END IF;
 
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE CHEQUE
-		SET Num_Cheque = pNumCheque
-		WHERE Cod_Cliente = pCodCliente;
+		SET Num_Cheque = IFNULL(pNumCheque,Num_Cheque)
+		WHERE Cod_Cliente = pCodCliente AND Contador_Cheque = pContCheque;
 	END IF;
     
 	IF (pOperacion = 'DELETE') THEN
 		DELETE FROM CHEQUE
-		WHERE Cod_Cliente = pCodCliente;
+		WHERE Cod_Cliente = pCodCliente AND Contador_Cheque = pContCheque;
 	END IF;
 END;
 //
