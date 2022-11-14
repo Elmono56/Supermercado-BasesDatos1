@@ -161,7 +161,7 @@ CREATE TABLE `BODEGA_SUCURSAL_PRODUCTO` (
   `Precio_Compra` FLOAT NOT NULL,
   `Cod_Proveedor` INT NOT NULL,
   `Fecha_Compra` DATE NOT NULL,
-  `Cantidad_Comprada` INT NOT NULL,
+  `Cantidad_Actual` INT NOT NULL,
   `Fecha_Produccion` DATE NOT NULL,
   `Fecha_Vencimiento` DATE NOT NULL,
   PRIMARY KEY (`Cod_Bode_Sucu_Produ`),
