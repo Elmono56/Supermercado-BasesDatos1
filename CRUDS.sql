@@ -613,3 +613,61 @@ BEGIN
 	END IF;
 END;
 //
+
+/*------------------------------------------------------------ BODEGA_PROVEEDOR_PRODUCTO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_BODEPROVEPRODU(pCodBodega INT, pCodProvee INT, pCodProdu INT, pPrecioVenta FLOAT, pCantBodega INT, 
+															pFechaProducc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO BODEGA_PROVEEDOR_PRODUCTO(Cod_Proveedor, Cod_Producto, Precio_Venta, Cantidad_En_Bodega, Fecha_Produccion, Fecha_Vencimiento)
+        VALUES(pCodProvee, pCodProdu, pPrecioVenta, pCantBodega, pFechaProducc, pFechaVenci);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Cod_Bode_Provee_Produ, Cod_Proveedor, Cod_Producto, Precio_Venta, Cantidad_En_Bodega, Fecha_Produccion, Fecha_Vencimiento
+		FROM BODEGA_PROVEEDOR_PRODUCTO
+		WHERE Cod_Bode_Provee_Produ = pCodBodega;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE BODEGA_PROVEEDOR_PRODUCTO
+		SET Cod_Proveedor=IFNULL(pCodProvee,Cod_Proveedor), Cod_Producto=IFNULL(pCodProdu,Cod_Producto), Precio_Venta=IFNULL(pPrecioVenta,Precio_Venta),
+					Cantidad_En_Bodega=IFNULL(pCantBodega,Cantidad_En_Bodega), Fecha_Produccion=IFNULL(pFechaProducc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
+		WHERE Cod_Bode_Provee_Produ = pCodBodega;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM BODEGA_PROVEEDOR_PRODUCTO
+		WHERE Cod_Bode_Provee_Produ = pCodBodega;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ BONOS_EMPLEADO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_BONOSEMP(pNumBono INT,  pCodEmpleado INT, pNumFact INT, pMontoBono FLOAT, pFechaBono DATE, pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO BONOS_EMPLEADO(Cod_Empleado, Num_Factura, MontoBono, Fecha_Bono)
+		VALUES(pCodEmpleado, pNumFact, pMontoBono, pFechaBono);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Num_Bono, Cod_Empleado, Num_Factura, MontoBono, Fecha_Bono
+		FROM BONOS_EMPLEADO
+		WHERE Num_Bono = pNumBono;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE BONOS_EMPLEADO
+		SET  MontoBono=IFNULL(pMontoBono,MontoBono), Fecha_Bono=IFNULL(pFechaBono,Fecha_Bono)
+		WHERE Num_Bono = pNumBono;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM BONOS_EMPLEADO
+		WHERE Num_Bono = pNumBono;
+	END IF;
+END;
+//
