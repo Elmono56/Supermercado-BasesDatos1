@@ -1,5 +1,7 @@
 CREATE DATABASE IF NOT EXISTS SUPERMERCADO;
 
+use supermercado;
+
 CREATE TABLE `PAIS` (
   `Cod_Pais` INT NOT NULL UNIQUE,
   `Nombre_Pais` VARCHAR(40) NOT NULL,
@@ -174,7 +176,7 @@ CREATE TABLE `CRIPTOCARTERA` (
   `Cod_Cliente` INT NOT NULL,
   `Num_Cripto_Cartera` VARCHAR(25) NOT NULL,
   `Contador_CriptoCar` INT AUTO_INCREMENT NOT NULL,
-  PRIMARY KEY (  `Contador_CriptoCar`),
+  PRIMARY KEY (`Contador_CriptoCar`),
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
@@ -182,7 +184,7 @@ CREATE TABLE `TARJETA_CREDITO` (
   `Cod_Cliente` INT NOT NULL,
   `Num_Tarjeta_Credito` VARCHAR(20) NOT NULL,
   `Contador_TarjCre` INT AUTO_INCREMENT NOT NULL,
-  PRIMARY KEY ( `Contador_TarjCre`),
+  PRIMARY KEY (`Contador_TarjCre`),
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
@@ -190,7 +192,7 @@ CREATE TABLE `CHEQUE` (
   `Cod_Cliente` INT NOT NULL,
   `Num_Cheque` VARCHAR(20) NOT NULL,
   `Contador_Cheque` INT AUTO_INCREMENT NOT NULL,
-  PRIMARY KEY ( `Contador_Cheque`),
+  PRIMARY KEY (`Contador_Cheque`),
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
@@ -217,7 +219,6 @@ CREATE TABLE `BODEGA_PROVEEDOR_PRODUCTO` (
   FOREIGN KEY (`Cod_Proveedor`) REFERENCES `PROVEEDOR`(`Cod_Proveedor`),
   FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`)
 );
-
 
 /*----------------------------------------------------------------------------------------------------------------
 -----------------------------------------------------CRUDs----------------------------------------------------
@@ -507,7 +508,7 @@ END;
 
 /*------------------------------------------------------------ CLIENTE ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_CIENTE(pCodCliente INT, pCodUsu INT, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_CLIENTE(pCodCliente INT, pCodUsu INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO CLIENTE(Cod_Cliente, Cod_Usuario)
@@ -731,12 +732,12 @@ CREATE PROCEDURE CRUD_BODESUCUPRODU(pCodBodega INT, pCodProdu INT, pCodSucursal 
 										pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra INT, pCantCompra INT, pFechaProduc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO BODEGA_SUCURSAL_PRODUCTO(Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento)
+		INSERT INTO BODEGA_SUCURSAL_PRODUCTO(Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Actual, Fecha_Produccion, Fecha_Vencimiento)
         VALUES(pCodBodega, pCodProdu, pCodSucursal, pPrecioCompra, pCodProveedor, pFechaCompra, pCantCompra, pFechaProduc, pFechaVenci);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Comprada, Fecha_Produccion, Fecha_Vencimiento
+		SELECT Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Actual, Fecha_Produccion, Fecha_Vencimiento
 		FROM BODEGA_SUCURSAL_PRODUCTO
 		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
   END IF;
@@ -744,7 +745,7 @@ BEGIN
 	IF (pOperacion = 'UPDATE')  THEN
 		UPDATE BODEGA_SUCURSAL_PRODUCTO
 		SET Cod_Producto=IFNULL(pCodProdu,Cod_Producto), Cod_Sucursal=IFNULL(pCodSucursal,Cod_Sucursal), Precio_Compra=IFNULL(pPrecioCompra,Precio_Compra), Cod_Proveedor=IFNULL(pCodProveedor,Cod_Proveedor), 
-				Fecha_Compra=IFNULL(pFechaCompra,Fecha_Compra), Cantidad_Comprada=IFNULL(pCantCompra,Cantidad_Comprada), Fecha_Produccion=IFNULL(pFechaProduc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
+				Fecha_Compra=IFNULL(pFechaCompra,Fecha_Compra), Cantidad_Actual=IFNULL(pCantCompra,Cantidad_Actual), Fecha_Produccion=IFNULL(pFechaProduc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
 		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
 	END IF;
     
@@ -754,6 +755,7 @@ BEGIN
 	END IF;
 END;
 //
+
 
 /*------------------------------------------------------------ CRIPTOCARTERA ------------------------------------------------------------*/
 delimiter //
@@ -898,9 +900,159 @@ END;
 //
 
 DELIMITER ;
-/*------------------------------------------------------------ PRUEBAS ------------------------------------------------------------*/
-use supermercado;
+
+/*---------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------PRUEBAS----------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------*/
+
+call CRUD_PAIS(507,'Panama', 'CREATE');
+call CRUD_PROVINCIA(5071,'Chiriqui',507,'CREATE');
+call CRUD_PROVINCIA(5072,'Ciudad de Panama',507,'CREATE');
+
 call CRUD_PAIS(506,'Costa Rica', 'CREATE');
-call CRUD_PAIS(1,'USA', 'CREATE');
 call CRUD_PROVINCIA(1,'San Jose',506,'CREATE');
-call CRUD_PROVINCIA(1, null, null, 'READ');
+call CRUD_PROVINCIA(2,'Alajuela',506,'CREATE');
+call CRUD_PROVINCIA(3,'Cartago',506,'CREATE');
+
+call CRUD_CIUDAD(11,'San Jose Centro',1,'CREATE');
+call CRUD_CIUDAD(12,'Perez Zeledon',1,'CREATE');
+call CRUD_CIUDAD(13,'Desamparados',1,'CREATE');
+
+call CRUD_SUCURSAL(111,'PZ TOWN',11,'CREATE');
+
+call CRUD_SEXO(1,'Masculino','CREATE');
+call CRUD_SEXO(2,'Femenino','CREATE');
+call CRUD_SEXO(3,'Otro','CREATE');
+
+call CRUD_PERSONA(118440792,'Jose Pablo','Hidalgo Navarro',"2002-06-05",'Barrio Lourdes',1,12,'CREATE');
+call CRUD_PERSONA(111111111,'Maria del Mar','Fernandez Vega',"1998-04-15",'Barrio Bloque K',2,13,'CREATE');
+call CRUD_PERSONA(122222222,'Kevin','Nuñez Cruz',"1995-01-21",'Barrio Escalante',1,11,'CREATE');
+call CRUD_PERSONA(133333333,'Estefanny','Gamboa Jimenez',"2003-12-01",'Curridabat',2,11,'CREATE');
+call CRUD_PERSONA(155555555,'Javier Ernaldo','Benabidez Cruz',"2001-10-11",'Daniel Flores',1,12,'CREATE');
+call CRUD_PERSONA(166666666,'Alonso','Zegheline Ovierira',"2001-07-15",'Zapote',1,11,'CREATE');
+call CRUD_PERSONA(177777777,'Fabian Josué','Solano Rojas',"1993-08-17",'Daniel Flores',1,12,'CREATE');
+
+call CRUD_PULABORAL(10,'Manager Sucursal',300000,'CREATE');
+call CRUD_PULABORAL(20,'Cajero',150000,'CREATE');
+call CRUD_PULABORAL(30,'Limpieza', 150000,'CREATE');
+
+call CRUD_EMPLEADO(1000,"2020-05-30",40,111,10,118440792,'CREATE');
+call CRUD_EMPLEADO(2000,"2019-07-04",20,111,20,111111111,'CREATE');
+call CRUD_EMPLEADO(3000,"2022-09-25",40,111,30,122222222,'CREATE');
+call CRUD_EMPLEADO(4000,"2021-04-15",50,111,20,133333333,'CREATE');
+call CRUD_EMPLEADO(5000,"2020-03-06",40,111,30,144444444,'CREATE');
+
+call CRUD_TIPUSUARIO(1,'Basico','CREATE');
+call CRUD_TIPUSUARIO(2,'Starter','CREATE');
+call CRUD_TIPUSUARIO(3,'Premiun','CREATE');
+
+call CRUD_USUARIO(250, 'Javezuela1','1234',1,155555555,'CREATE');
+call CRUD_USUARIO(260, 'AloOvi','abcd',2,166666666,'CREATE');
+call CRUD_USUARIO(270, 'SoloJosueF','Fabi15',3,177777777,'CREATE');
+
+call CRUD_CLIENTE(250,250,'CREATE');
+call CRUD_CLIENTE(260,260,'CREATE');
+call CRUD_CLIENTE(270,270,'CREATE');
+
+call CRUD_PROVEEDOR(1000, 'Dos Pinos', 24.5, 12, 'CREATE');
+call CRUD_PROVEEDOR(2000, 'Verdulería Feliz', 35.7, 12, 'CREATE');
+call CRUD_PROVEEDOR(3000, 'Electrodomesticos KSA', 50.0, 11, 'CREATE');
+
+call CRUD_IMPUESTO(13, 13.0, 'IVA',  'CREATE');
+call CRUD_IMPUESTO(1, 0.0, 'Excento',  'CREATE');
+call CRUD_IMPUESTO(55, 5.5, 'IVA',  'CREATE');
+
+call CRUD_TIPPRODU(110, 'Fruta', 'Fruta', 13, 'CREATE');
+call CRUD_TIPPRODU(220, 'Verdura', 'Verdura', 13, 'CREATE');
+call CRUD_TIPPRODU(330, 'Legumbre', 'Legumbre', 13, 'CREATE');
+call CRUD_TIPPRODU(410, 'Lacteo', 'Leche', 13, 'CREATE');
+call CRUD_TIPPRODU(420, 'Lacteo', 'Queso', 13, 'CREATE');
+call CRUD_TIPPRODU(430, 'Lacteo', 'Yogurth', 13, 'CREATE');
+call CRUD_TIPPRODU(440, 'Lacteo', 'Helado', 13, 'CREATE');
+call CRUD_TIPPRODU(510, 'Electrodomestico', 'Televisores', 13, 'CREATE');
+call CRUD_TIPPRODU(520, 'Electrodomestico', 'Celulares', 13, 'CREATE');
+call CRUD_TIPPRODU(530, 'Electrodomestico', 'Microondas', 13, 'CREATE');
+call CRUD_TIPPRODU(540, 'Electrodomestico', 'Olla Arrocera', 13, 'CREATE');
+call CRUD_TIPPRODU(550, 'Electrodomestico', 'Laptop', 13, 'CREATE');
+
+call CRUD_PRODUCTO(111,  'Manzana', 110, 10, 25, 'CREATE');
+call CRUD_PRODUCTO(112,  'Banano', 110, 20, 60, 'CREATE');
+call CRUD_PRODUCTO(113,  'Sandía', 110, 5, 15, 'CREATE');
+call CRUD_PRODUCTO(221,  'Lechuga', 220, 7, 25, 'CREATE');
+call CRUD_PRODUCTO(222,  'Brocoli', 220, 5, 20, 'CREATE');
+call CRUD_PRODUCTO(223,  'Ayote', 220, 10, 30, 'CREATE');
+call CRUD_PRODUCTO(331,  'Papa', 330, 20, 55, 'CREATE');
+call CRUD_PRODUCTO(332,  'Zanahoria', 330, 10, 35, 'CREATE');
+call CRUD_PRODUCTO(333,  'Camote', 330, 7, 21, 'CREATE');
+call CRUD_PRODUCTO(411,  'Leche Entera', 410, 15, 35, 'CREATE');
+call CRUD_PRODUCTO(412,  'Leche Semidescremada', 410, 15, 30, 'CREATE');
+call CRUD_PRODUCTO(413,  'Leche Condensada', 410, 5, 20, 'CREATE');
+call CRUD_PRODUCTO(421,  'Queso Turrialba', 420, 10, 20, 'CREATE');
+call CRUD_PRODUCTO(422,  'Queso Amarillo', 420, 10, 25, 'CREATE');
+call CRUD_PRODUCTO(431,  'Yogurth Griego', 430, 5, 15, 'CREATE');
+call CRUD_PRODUCTO(432,  'Yogurth de Fresa', 430, 10, 20, 'CREATE');
+call CRUD_PRODUCTO(441,  'Helado de Vainilla', 440, 7, 23, 'CREATE');
+call CRUD_PRODUCTO(442,  'Helado Napolitano', 440, 7, 20, 'CREATE');
+call CRUD_PRODUCTO(443,  'Helado de Menta', 440, 5, 19, 'CREATE');
+call CRUD_PRODUCTO(511,  'TV 40p Samsung', 510, 5, 10, 'CREATE');
+call CRUD_PRODUCTO(512,  'TV 40p TCL', 510, 5, 10, 'CREATE');
+call CRUD_PRODUCTO(513,  'TV 30p Samsung', 510, 7, 17, 'CREATE');
+call CRUD_PRODUCTO(521,  'Xiaomi  RedMi 10', 520, 4, 13, 'CREATE');
+call CRUD_PRODUCTO(522,  'Samsung S10 Pro', 520, 3, 14, 'CREATE');
+call CRUD_PRODUCTO(523,  'iPhone 11 Pro Max', 520, 5, 13, 'CREATE');
+call CRUD_PRODUCTO(531,  'Microondas BlackDecker', 530, 5, 10, 'CREATE');
+call CRUD_PRODUCTO(532,  'Microondas Huawei', 530, 4, 11, 'CREATE');
+call CRUD_PRODUCTO(541,  'Olla Arrocera BlackDecker', 540, 5, 13, 'CREATE');
+call CRUD_PRODUCTO(542,  'Olla Arrocera Ostrel', 540, 4, 15, 'CREATE');
+call CRUD_PRODUCTO(551,  'Laptop Acer Aspire 5', 550, 2, 8, 'CREATE');
+call CRUD_PRODUCTO(552,  'Laptop Huawei Pro', 550, 3, 9, 'CREATE');
+call CRUD_PRODUCTO(553,  'Laptop iMac 3', 550, 4, 10, 'CREATE');
+
+call CRUD_TELEFPERSO(155555555, '70264789', null, 'CREATE');
+call CRUD_TELEFPERSO(155555555, '84578103', null, 'CREATE');
+call CRUD_TELEFPERSO(166666666, '65892145', null, 'CREATE');
+call CRUD_TELEFPERSO(177777777, '70704156', null, 'CREATE');
+
+call CRUD_CRIPTOCARTERA(250, 'CCBTC778991516684510', null, 'CREATE');
+call CRUD_CRIPTOCARTERA(250, 'CCETH871474456711331', null, 'CREATE');
+
+call CRUD_TARJECREDI(260, 'CR78459881045478', null, 'CREATE');
+call CRUD_TARJECREDI(260, 'CR78789231520546', null, 'CREATE');
+call CRUD_TARJECREDI(270, 'CR25637252897722', null, 'CREATE');
+
+call CRUD_CHEQUE(250, '65274578246710', null, 'CREATE');
+call CRUD_CHEQUE(250, '67684100269252', null, 'CREATE');
+call CRUD_CHEQUE(260, '21572848104784', null, 'CREATE');
+
+call CRUD_BODEPROVEPRODU(null, 1000, 411, 700, 50, "2022-04-05", "2022-04-30", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 412, 800, 30, "2022-05-05", "2022-05-30", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 413, 900, 20, "2022-05-05", "2022-08-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 421, 1000, 32, "2021-06-10", "2022-08-15", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 422, 900, 15, "2021-04-07", "2022-09-10", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 431, 1500, 40, "2022-04-07", "2022-10-20", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 432, 1300, 25, "2022-06-05", "2022-08-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 441, 2000, 25, "2022-01-27", "2023-09-27", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 442, 1750, 20, "2022-01-25", "2023-09-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 1000, 443, 2500, 16, "2022-01-15", "2023-09-16", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 111, 150, 60, "2022-01-05", "2022-03-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 112, 25, 75, "2022-02-05", "2022-04-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 113, 900, 80, "2022-03-05", "2022-05-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 221, 400, 45, "2022-04-05", "2022-06-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 222, 1300, 36, "2022-02-05", "2022-07-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 223, 560, 19, "2022-06-05", "2022-08-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 331, 650, 29, "2022-07-05", "2022-09-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 332, 430, 37, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 2000, 333, 400, 28, "2022-09-05", "2022-11-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 511, 1450000, 8, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 512, 800000, 10, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 513, 710025, 9, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 521, 201400, 7, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 522, 450000, 9, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 523, 950000, 13, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 531, 25000, 16, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 532, 45000, 13, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 541, 23000, 18, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 542, 35000, 15, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 551, 452000, 8, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 552, 560000, 9, "2022-08-05", "2022-10-25", 'CREATE');
+call CRUD_BODEPROVEPRODU(null, 3000, 553, 780000, 5, "2022-08-05", "2022-10-25", 'CREATE');

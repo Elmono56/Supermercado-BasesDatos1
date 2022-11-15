@@ -282,7 +282,7 @@ END;
 
 /*------------------------------------------------------------ CLIENTE ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_CIENTE(pCodCliente INT, pCodUsu INT, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_CLIENTE(pCodCliente INT, pCodUsu INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO CLIENTE(Cod_Cliente, Cod_Usuario)
