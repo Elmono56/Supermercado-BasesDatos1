@@ -117,17 +117,6 @@ CREATE TABLE `TIPO_PRODUCTO` (
   FOREIGN KEY (`Cod_Impuesto`) REFERENCES `IMPUESTO`(`Cod_Impuesto`)
 );
 
-CREATE TABLE `FACTURA` (
-  `Num_Factura` INT NOT NULL UNIQUE,
-  `Fecha_Factura` DATE NOT NULL,
-  `Cod_Cliente` INT NOT NULL,
-  `Cod_Empleado` INT NOT NULL,
-  `Metodo_Pago` VARCHAR(15) NOT NULL,
-  PRIMARY KEY (`Num_Factura`),
-  FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`),
-  FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`)
-);
-
 CREATE TABLE `PRODUCTO` (
   `Cod_Producto` INT NOT NULL UNIQUE,
   `Nombre_Producto` VARCHAR(50) NOT NULL,
@@ -136,16 +125,6 @@ CREATE TABLE `PRODUCTO` (
   `Cant_Maxima` INT NOT NULL,
   PRIMARY KEY (`Cod_Producto`),
   FOREIGN KEY (`Cod_Tipo_Producto`) REFERENCES `TIPO_PRODUCTO`(`Cod_Tipo_Producto`)
-);
-
-CREATE TABLE `FACTURA_PRODUCTO` (
-  `Num_Factura` INT NOT NULL,
-  `Cod_Producto` INT NOT NULL,
-  `Cantidad_Producto` INT NOT NULL,
-  `Porcentaje_Desc`  FLOAT NOT NULL,
-  `Motivo_Desc` VARCHAR(15),
-  FOREIGN KEY (`Num_Factura`) REFERENCES `FACTURA`(`Num_Factura`),
-  FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`)
 );
 
 CREATE TABLE `TELEF_PERSO` (
@@ -196,17 +175,6 @@ CREATE TABLE `CHEQUE` (
   FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`)
 );
 
-CREATE TABLE `BONOS_EMPLEADO` (
-  `Num_Bono` INT NOT NULL AUTO_INCREMENT,
-  `Cod_Empleado` INT NOT NULL,
-  `Num_Factura` INT NOT NULL,
-  `MontoBono` FLOAT NOT NULL,
-  `Fecha_Bono` DATE NOT NULL,
-  PRIMARY KEY (`Num_Bono`),
-  FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`),
-  FOREIGN KEY (`Num_Factura`) REFERENCES `FACTURA`(`Num_Factura`)
-);
-
 CREATE TABLE `BODEGA_PROVEEDOR_PRODUCTO` (
   `Cod_Bode_Provee_Produ` INT  NOT NULL AUTO_INCREMENT,
   `Cod_Proveedor` INT NOT NULL,
@@ -219,6 +187,58 @@ CREATE TABLE `BODEGA_PROVEEDOR_PRODUCTO` (
   FOREIGN KEY (`Cod_Proveedor`) REFERENCES `PROVEEDOR`(`Cod_Proveedor`),
   FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`)
 );
+
+CREATE TABLE `ESTADO_PEDIDO` (
+  `ID_EstadoP` INT NOT NULL AUTO_INCREMENT,
+  `Descripcion_EstadoP` VARCHAR(15) NOT NULL,
+  PRIMARY KEY (`ID_EstadoP`)
+);
+
+CREATE TABLE `PEDIDO` (
+  `Num_Pedido` INT NOT NULL UNIQUE,
+  `Fecha_Pedido` DATE NOT NULL,
+  `Cod_Cliente` INT NOT NULL,
+  `ID_EstadoP` INT NOT NULL,
+  `Envio` BOOL NOT NULL,
+  PRIMARY KEY (`Num_Pedido`),
+  FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`),
+  FOREIGN KEY (`ID_EstadoP`) REFERENCES `ESTADO_PEDIDO`(`ID_EstadoP`)
+);
+
+CREATE TABLE `PEDIDO_PRODUCTO` (
+  `Num_Pedido` INT NOT NULL,
+  `Cod_Producto` INT NOT NULL,
+  `Cantidad_Producto` INT NOT NULL,
+  `Porcentaje_Desc`  FLOAT NOT NULL,
+  `Motivo_Desc` VARCHAR(15),
+  FOREIGN KEY (`Num_Pedido`) REFERENCES `PEDIDO`(`Num_Pedido`),
+  FOREIGN KEY (`Cod_Producto`) REFERENCES `PRODUCTO`(`Cod_Producto`)
+);
+
+CREATE TABLE `FACTURA` (
+  `Num_Factura` INT NOT NULL UNIQUE,
+  `Fecha_Factura` DATE NOT NULL,
+  `Cod_Cliente` INT NOT NULL,
+  `Cod_Empleado` INT NOT NULL,
+  `Metodo_Pago` VARCHAR(15) NOT NULL,
+  `Num_Pedido` INT NOT NULL,
+  PRIMARY KEY (`Num_Factura`),
+  FOREIGN KEY (`Cod_Cliente`) REFERENCES `CLIENTE`(`Cod_Cliente`),
+  FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`),
+   FOREIGN KEY (`Num_Pedido`) REFERENCES `PEDIDO`(`Num_Pedido`)
+);
+
+CREATE TABLE `BONOS_EMPLEADO` (
+  `Num_Bono` INT NOT NULL AUTO_INCREMENT,
+  `Cod_Empleado` INT NOT NULL,
+  `Num_Factura` INT NOT NULL,
+  `MontoBono` FLOAT NOT NULL,
+  `Fecha_Bono` DATE NOT NULL,
+  PRIMARY KEY (`Num_Bono`),
+  FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`),
+  FOREIGN KEY (`Num_Factura`) REFERENCES `FACTURA`(`Num_Factura`)
+);
+
 
 /*----------------------------------------------------------------------------------------------------------------
 -----------------------------------------------------CRUDs----------------------------------------------------
@@ -616,15 +636,15 @@ END;
 
 /*------------------------------------------------------------ FACTURA ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_FACTURA(pNumFact INT, pFecFact DATE, pCodCliente INT, pCodEmpleado INT, pMetodoPago VARCHAR(15), pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_FACTURA(pNumFact INT, pFecFact DATE, pCodCliente INT, pCodEmpleado INT, pMetodoPago VARCHAR(15), pNumPedido INT, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO FACTURA(Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago)
-		VALUES(pNumFact, pFecFact, pCodCliente, pCodEmpleado, pMetodoPago);
+		INSERT INTO FACTURA(Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago, Num_Pedido)
+		VALUES(pNumFact, pFecFact, pCodCliente, pCodEmpleado, pMetodoPago,pNumPedido);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago
+		SELECT Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago, Num_Pedido
 		FROM FACTURA
 		WHERE Num_Factura = pNumFact;
   END IF;
@@ -666,34 +686,6 @@ BEGIN
 	IF (pOperacion = 'DELETE') THEN
 		DELETE FROM PRODUCTO
 		WHERE Cod_Producto = pCodProdu;
-	END IF;
-END;
-//
-
-/*------------------------------------------------------------ FACTURA_PRODUCTO ------------------------------------------------------------*/
-delimiter //
-CREATE PROCEDURE CRUD_FACTxPRODU(pNumFact INT, pCodProdu INT, pCantProdu INT, pPorcenDesc FLOAT, pMotivoDesc VARCHAR(15),  pOperacion VARCHAR(10))
-BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO FACTURA_PRODUCTO(Num_Factura, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
-		VALUES(pNumFact, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Num_Factura, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc
-		FROM FACTURA_PRODUCTO
-		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu ;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE FACTURA_PRODUCTO
-		SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
-		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu;
-	END IF;
-    
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM FACTURA_PRODUCTO
-		WHERE Num_Factura = pNumFact AND Cod_Producto=pCodProdu;
 	END IF;
 END;
 //
@@ -755,7 +747,6 @@ BEGIN
 	END IF;
 END;
 //
-
 
 /*------------------------------------------------------------ CRIPTOCARTERA ------------------------------------------------------------*/
 delimiter //
@@ -899,6 +890,89 @@ BEGIN
 END;
 //
 
+/*------------------------------------------------------------ ESTADO_PEDIDO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_ESTADOP(pIDEstadoP INT,  pDescripEstP VARCHAR(15), pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO ESTADO_PEDIDO(ID_EstadoP, Descripcion_EstadoP)
+		VALUES(pIDEstadoP, pDescripEstP);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT ID_EstadoP, Descripcion_EstadoP
+		FROM ESTADO_PEDIDO
+		WHERE ID_EstadoP = pIDEstadoP;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE ESTADO_PEDIDO
+		SET  ID_EstadoP=IFNULL(pDescripEstP,ID_EstadoP)
+		WHERE ID_EstadoP = pIDEstadoP;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM ESTADO_PEDIDO
+		WHERE ID_EstadoP = pIDEstadoP;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ PEDIDO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_PEDIDO(pNumPedido INT, pFecPedido DATE, pCodCliente INT, ID_EstadoP INT, pEnvio BOOL, pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO PEDIDO(Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio)
+		VALUES(pNumPedido, pFecPedido, pCodCliente, ID_EstadoP, pEnvio);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio
+		FROM PEDIDO
+		WHERE Num_Pedido = pNumPedido;
+  END IF;
+  
+ IF (pOperacion = 'UPDATE')  THEN
+		UPDATE PEDIDO
+		SET Envio = IFNULL(pEnvio,Envio)
+		WHERE Num_Pedido = pNumPedido;
+	END IF;
+  
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM PEDIDO
+		WHERE Num_Pedido = pNumPedido;
+	END IF;
+END;
+//
+
+/*------------------------------------------------------------ PEDIDO_PRODUCTO ------------------------------------------------------------*/
+delimiter //
+CREATE PROCEDURE CRUD_PEDIDOxPRODU(pNumPedido INT, pCodProdu INT, pCantProdu INT, pPorcenDesc FLOAT, pMotivoDesc VARCHAR(15),  pOperacion VARCHAR(10))
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO PEDIDO_PRODUCTO(Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
+		VALUES(pNumPedido, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
+	END IF;
+
+	IF (pOperacion = 'READ') THEN
+		SELECT Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc
+		FROM PEDIDO_PRODUCTO
+		WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+  END IF;
+
+	IF (pOperacion = 'UPDATE')  THEN
+		UPDATE PEDIDO_PRODUCTO
+		SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
+		WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+	END IF;
+    
+	IF (pOperacion = 'DELETE') THEN
+		DELETE FROM PEDIDO_PRODUCTO
+		WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+	END IF;
+END;
+//
 DELIMITER ;
 
 /*---------------------------------------------------------------------------------------------------------------------
@@ -960,7 +1034,7 @@ call CRUD_PROVEEDOR(3000, 'Electrodomesticos KSA', 50.0, 11, 'CREATE');
 
 call CRUD_IMPUESTO(13, 13.0, 'IVA',  'CREATE');
 call CRUD_IMPUESTO(1, 0.0, 'Excento',  'CREATE');
-call CRUD_IMPUESTO(55, 5.5, 'IVA',  'CREATE');
+call CRUD_IMPUESTO(65, 6.5, 'IVA MITAD',  'CREATE');
 
 call CRUD_TIPPRODU(110, 'Fruta', 'Fruta', 13, 'CREATE');
 call CRUD_TIPPRODU(220, 'Verdura', 'Verdura', 13, 'CREATE');
@@ -1056,3 +1130,7 @@ call CRUD_BODEPROVEPRODU(null, 3000, 542, 35000, 15, "2022-08-05", "2022-10-25",
 call CRUD_BODEPROVEPRODU(null, 3000, 551, 452000, 8, "2022-08-05", "2022-10-25", 'CREATE');
 call CRUD_BODEPROVEPRODU(null, 3000, 552, 560000, 9, "2022-08-05", "2022-10-25", 'CREATE');
 call CRUD_BODEPROVEPRODU(null, 3000, 553, 780000, 5, "2022-08-05", "2022-10-25", 'CREATE');
+
+call CRUD_ESTADOP(1,  'En espera', 'CREATE');
+call CRUD_ESTADOP(2,  'Completado', 'CREATE');
+call CRUD_ESTADOP(3,  'Cancelado', 'CREATE');
