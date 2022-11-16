@@ -300,26 +300,64 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_SEXO(pCodSexo INT, pDescripSexo VARCHAR(15), pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO SEXO(Cod_Sexo, Descrip_Sexo)
-		VALUES(pCodSexo, pDescripSexo);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Sexo, Descrip_Sexo
-		FROM SEXO
-		WHERE Cod_Sexo = pCodSexo;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE SEXO
-		SET Descrip_Sexo = IFNULL(pDescripSexo, Descrip_Sexo)
-		WHERE Cod_Sexo = pCodSexo;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodSexo IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM SEXO
-		WHERE Cod_Sexo = pCodSexo;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) = 0) THEN
+				IF (pDescripSexo != '') THEN
+					INSERT INTO SEXO(Cod_Sexo, Descrip_Sexo)
+					VALUES(pCodSexo, pDescripSexo);
+				ELSE
+					SET msgError = 'La descripción del sexo está vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de sexo ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+				SELECT Cod_Sexo, Descrip_Sexo
+				FROM SEXO
+				WHERE Cod_Sexo = pCodSexo;
+			ELSE
+				SET msgError = 'El codigo de sexo no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+				UPDATE SEXO
+				SET Descrip_Sexo = IFNULL( pDescripSexo, Descrip_Sexo)
+				WHERE Cod_Sexo = pCodSexo;
+			ELSE
+				SET msgError = 'El codigo de sexo no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+				IF ((SELECT COUNT(*) FROM PERSONA WHERE Cod_Sexo = pCodSexo) = 0) THEN
+					DELETE FROM SEXO
+					WHERE Cod_Sexo = pCodSexo;
+				ELSE
+					SET msgError = 'No se puede eliminar, sexo asociado a persona';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de sexo no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de sexo es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -357,26 +395,74 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_PULABORAL(pCodPuLaboral INT, pDescPuLaboral VARCHAR(30), pSalarioMe FLOAT,  pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PUESTO_LABORAL(Cod_Puesto_Laboral, Descrip_Pues_Lab, Salario_Mensual)
-		VALUES(pCodPuLaboral, pDescPuLaboral, pSalarioMe);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Puesto_Laboral, Descrip_Pues_Lab, Salario_Mensual
-		FROM PUESTO_LABORAL
-		WHERE Cod_Puesto_Laboral = pCodPuLaboral;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PUESTO_LABORAL
-		SET  Descrip_Pues_Lab=IFNULL(pDescPuLaboral,Descrip_Pues_Lab), Salario_Mensual=IFNULL(pSalarioMe,Salario_Mensual)
-		WHERE Cod_Puesto_Laboral = pCodPuLaboral;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodPuLaboral IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PUESTO_LABORAL
-		WHERE Cod_Puesto_Laboral = pCodPuLaboral;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM PUESTO_LABORAL WHERE Cod_Puesto_Laboral = pCodPuLaboral) = 0) THEN
+				IF (pDescPuLaboral != '') THEN
+					IF ((pSalarioMe IS NOT NULL) AND (pSalarioMe >= 0 )) THEN
+						INSERT INTO PUESTO_LABORAL(Cod_Puesto_Laboral, Descrip_Pues_Lab, Salario_Mensual)
+						VALUES(pCodPuLaboral, pDescPuLaboral, pSalarioMe);
+					ELSE
+						SET msgError = 'El salario ingresado no es válido';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'La descripción del puesto laboral está vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de puesto laboral ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PUESTO_LABORAL WHERE Cod_Puesto_Laboral = pCodPuLaboral) > 0) THEN
+				SELECT Cod_Puesto_Laboral, Descrip_Pues_Lab, Salario_Mensual
+				FROM PUESTO_LABORAL
+				WHERE Cod_Puesto_Laboral = pCodPuLaboral;
+			ELSE
+				SET msgError = 'Codigo de puesto laboral no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PUESTO_LABORAL WHERE Cod_Puesto_Laboral = pCodPuLaboral) > 0) THEN
+				IF ((pSalarioMe IS NOT NULL) AND (pSalarioMe >= 0 )) THEN
+					UPDATE PUESTO_LABORAL
+					SET Descrip_Pues_Lab = IFNULL( pDescPuLaboral, Descrip_Pues_Lab), Salario_Mensual = IFNULL( pSalarioMe, Salario_Mensual)
+					WHERE Cod_Puesto_Laboral = pCodPuLaboral;
+				ELSE
+                SET msgError = 'El salario ingresado no es válido';
+				SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de puesto laboral no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PUESTO_LABORAL WHERE Cod_Puesto_Laboral = pCodPuLaboral) > 0) THEN
+				IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Puesto_Laboral = pCodPuLaboral) = 0) THEN
+					DELETE FROM PUESTO_LABORAL
+					WHERE Cod_Puesto_Laboral = pCodPuLaboral;
+				ELSE
+					SET msgError = 'No se puede eliminar, puesto laboral asociado a empleado';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de puesto laboral no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de puesto laboral es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
