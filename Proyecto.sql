@@ -248,26 +248,64 @@ CREATE TABLE `BONOS_EMPLEADO` (
 delimiter //
 CREATE PROCEDURE CRUD_PAIS(pCodPais INT, pNombrePais VARCHAR(40), pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PAIS(Cod_Pais,Nombre_Pais)
-		VALUES(pCodPais,pNombrePais);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Pais, Nombre_Pais
-		FROM PAIS
-		WHERE Cod_Pais = pCodPais;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PAIS
-		SET Nombre_Pais = IFNULL( pNombrePais, Nombre_Pais)
-		WHERE Cod_Pais = pCodPais;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodPais IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PAIS
-		WHERE Cod_Pais = pCodPais;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM PAIS WHERE Cod_Pais = pCodPais) = 0) THEN
+				IF (pNombrePais != '') THEN
+					INSERT INTO PAIS(Cod_Pais,Nombre_Pais)
+					VALUES(pCodPais,pNombrePais);
+				ELSE
+					SET msgError = 'El nombre del pais está vacío';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de pais ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PAIS WHERE Cod_Pais = pCodPais) > 0) THEN
+				SELECT Cod_Pais, Nombre_Pais
+				FROM PAIS
+				WHERE Cod_Pais = pCodPais;
+			ELSE
+				SET msgError = 'El pais no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PAIS WHERE Cod_Pais = pCodPais) > 0) THEN
+				UPDATE PAIS
+				SET Nombre_Pais = IFNULL( pNombrePais, Nombre_Pais)
+				WHERE Cod_Pais = pCodPais;
+			ELSE
+				SET msgError = 'El pais no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PAIS WHERE Cod_Pais = pCodPais) > 0) THEN
+				IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Pais = pCodPais) = 0) THEN
+					DELETE FROM PAIS
+					WHERE Cod_Pais = pCodPais;
+				ELSE
+					SET msgError = 'No se puede eliminar, pais asociado a provincias';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el pais no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de pais es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -277,26 +315,69 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_PROVINCIA(pCodProvincia INT, pNombreProvincia VARCHAR(40), pCodPais INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PROVINCIA(Cod_Provincia, Nombre_Provincia, Cod_Pais)
-		VALUES(pCodProvincia, pNombreProvincia, pCodPais);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Provincia, Nombre_Provincia, Cod_Pais
-		FROM PROVINCIA
-		WHERE Cod_Provincia = pCodProvincia;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PROVINCIA
-		SET Nombre_Provincia = IFNULL(pNombreProvincia, Nombre_Provincia)
-		WHERE Cod_Provincia = pCodProvincia;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodProvincia IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PROVINCIA
-		WHERE Cod_Provincia = pCodProvincia;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Provincia = pCodProvincia) = 0) THEN
+				IF (pNombreProvincia != '') THEN
+					IF ((SELECT COUNT(*) FROM PAIS WHERE Cod_Pais = pCodPais) > 0) THEN 
+						INSERT INTO PROVINCIA(Cod_Provincia, Nombre_Provincia, Cod_Pais)
+						VALUES(pCodProvincia, pNombreProvincia, pCodPais);
+					ELSE
+						SET msgError = 'El codigo de pais no existe';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'El nombre de la provincia está vacía';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El codigo de provincia ya existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Provincia = pCodProvincia) > 0) THEN
+				SELECT Cod_Provincia, Nombre_Provincia, Cod_Pais
+				FROM PROVINCIA
+				WHERE Cod_Provincia = pCodProvincia;
+			ELSE
+				SET msgError = 'La provincia no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Provincia = pCodProvincia) > 0) THEN
+				UPDATE PROVINCIA
+				SET Nombre_Provincia = IFNULL( pNombreProvincia, Nombre_Provincia)
+				WHERE Cod_Provincia = pCodProvincia;
+			ELSE
+				SET msgError = 'La provincia no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+		
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Provincia = pCodProvincia) > 0) THEN
+				IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Provincia = pCodProvincia) = 0) THEN
+					DELETE FROM PROVINCIA
+					WHERE Cod_Provincia = pCodProvincia;
+				ELSE
+					SET msgError = 'No se puede eliminar, provincia asociada a ciudad';
+					SELECT msgError;
+				END IF;
+			ELSE
+					SET msgError = 'No se puede eliminar, la provincia no existe';
+					SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de provincia esta vacio';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -1072,7 +1153,7 @@ END
 //
 
 DELIMITER ;
-
+;
 /*---------------------------------------------------------------------------------------------------------------------
 -----------------------------------------------------PRUEBAS----------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------*/
