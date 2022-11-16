@@ -430,7 +430,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 				SELECT msgError;
 			END IF;
 		END IF;
-		
+        
 		IF (pOperacion = 'DELETE') THEN
 			IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
 				IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Ciudad = pCodCiudad) = 0) THEN
@@ -467,26 +467,74 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_SUCURSAL(pCodSucursal INT, pNombreSucursal VARCHAR(40), pCodCiudad INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO SUCURSAL(Cod_Sucursal, Nombre_Sucursal, Cod_Ciudad)
-		VALUES(pCodSucursal, pNombreSucursal, pCodCiudad);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Sucursal, Nombre_Sucursal, Cod_Ciudad
-		FROM SUCURSAL
-		WHERE Cod_Sucursal = pCodSucursal;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE SUCURSAL
-		SET Nombre_Sucursal = IFNULL(pNombreSucursal, Nombre_Sucursal)
-		WHERE Cod_Sucursal = pCodSucursal;
-	END IF;
+	DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodSucursal IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM SUCURSAL
-		WHERE Cod_Sucursal = pCodSucursal;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) = 0) THEN
+				IF (pNombreSucursal != '') THEN
+					IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN 
+						INSERT INTO SUCURSAL(Cod_Sucursal, Nombre_Sucursal, Cod_Ciudad)
+						VALUES(pCodSucursal, pNombreSucursal, pCodCiudad);
+					ELSE
+						SET msgError = 'El codigo de ciudad no existe';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'El nombre de la sucursal está vacía';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El codigo de sucursal ya existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) > 0) THEN
+				SELECT Cod_Sucursal, Nombre_Sucursal, Cod_Ciudad
+				FROM SUCURSAL
+				WHERE Cod_Sucursal = pCodSucursal;
+			ELSE
+				SET msgError = 'La sucursal no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) > 0) THEN
+				UPDATE SUCURSAL
+				SET Nombre_Sucursal = IFNULL( pNombreSucursal, Nombre_Sucursal)
+				WHERE Cod_Sucursal = pCodSucursal;
+			ELSE
+				SET msgError = 'La sucursal no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+		
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) > 0) THEN
+				IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Sucursal = pCodSucursal) = 0) THEN
+					IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Sucursal = pCodSucursal) = 0) THEN
+						DELETE FROM SUCURSAL
+						WHERE Cod_Sucursal = pCodSucursal;
+					ELSE
+						SET msgError = 'No se puede eliminar, sucursal asociada a empleado';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, sucursal asociada a bodega_sucursal';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, la sucursal no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+	ELSE
+		SET msgError = 'El codigo de sucursal esta vacio';
+        SELECT msgError;
 	END IF;
 END;
 //
