@@ -386,26 +386,79 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_CIUDAD(pCodCiudad INT, pNombreCiudad VARCHAR(40), pCodProvincia INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO CIUDAD(Cod_Ciudad, Nombre_Ciudad, Cod_Provincia)
-		VALUES(pCodCiudad, pNombreCiudad, pCodProvincia);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Ciudad, Nombre_Ciudad, Cod_Provincia
-		FROM CIUDAD
-		WHERE Cod_Ciudad = pCodCiudad;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE CIUDAD
-		SET Nombre_Ciudad = IFNULL(pNombreCiudad, Nombre_Ciudad)
-		WHERE Cod_Ciudad = pCodCiudad;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodCiudad IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM CIUDAD
-		WHERE Cod_Ciudad = pCodCiudad;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) = 0) THEN
+				IF (pNombreCiudad != '') THEN
+					IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Provincia = pCodProvincia) > 0) THEN 
+						INSERT INTO CIUDAD(Cod_Ciudad, Nombre_Ciudad, Cod_Provincia)
+						VALUES(pCodCiudad, pNombreCiudad, pCodProvincia);
+					ELSE
+						SET msgError = 'El codigo de provincia no existe';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'El nombre de la ciudad está vacía';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El codigo de ciudad ya existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
+				SELECT Cod_Ciudad, Nombre_Ciudad, Cod_Provincia
+				FROM CIUDAD
+				WHERE Cod_Ciudad = pCodCiudad;
+			ELSE
+				SET msgError = 'La ciudad no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
+				UPDATE CIUDAD
+				SET Nombre_Ciudad = IFNULL( pNombreCiudad, Nombre_Ciudad)
+				WHERE Cod_Ciudad = pCodCiudad;
+			ELSE
+				SET msgError = 'La ciudad no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+		
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
+				IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Ciudad = pCodCiudad) = 0) THEN
+					IF ((SELECT COUNT(*) FROM PERSONA WHERE Cod_Ciudad = pCodCiudad) = 0) THEN
+						IF ((SELECT COUNT(*) FROM PROVEEDOR WHERE Cod_Ciudad = pCodCiudad) = 0) THEN
+							DELETE FROM CIUDAD
+							WHERE Cod_Ciudad = pCodCiudad;
+                        ELSE
+							SET msgError = 'No se puede eliminar, ciudad asocidada a proveedor';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'No se puede eliminar, ciudad asociada a persona';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, ciudad asociada a sucursal';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, la ciudad no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de ciudad esta vacio';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -1178,7 +1231,7 @@ call CRUD_SEXO(2,'Femenino','CREATE');
 call CRUD_SEXO(3,'Otro','CREATE');
 
 call CRUD_PERSONA(118440792,'Jose Pablo','Hidalgo Navarro',"2002-06-05",'Barrio Lourdes',1,12,'CREATE');
-call CRUD_PERSONA(111111111,'Maria del Mar','Fernandez Vega',"1998-04-15",'Barrio Bloque K',2,13,'CREATE');
+call CRUD_PERSONA(111111111,'Maria del Mar','Fernandez Vega',"1998-04-15",'Barrio Bloque K',2,11,'CREATE');
 call CRUD_PERSONA(122222222,'Kevin','Nuñez Cruz',"1995-01-21",'Barrio Escalante',1,11,'CREATE');
 call CRUD_PERSONA(133333333,'Estefanny','Gamboa Jimenez',"2003-12-01",'Curridabat',2,11,'CREATE');
 call CRUD_PERSONA(155555555,'Javier Ernaldo','Benabidez Cruz',"2001-10-11",'Daniel Flores',1,12,'CREATE');
@@ -1207,13 +1260,13 @@ call CRUD_CLIENTE(250,250,'CREATE');
 call CRUD_CLIENTE(260,260,'CREATE');
 call CRUD_CLIENTE(270,270,'CREATE');
 
-call CRUD_PROVEEDOR(1000, 'Dos Pinos', 24.5, 12, 'CREATE');
+call CRUD_PROVEEDOR(1000, 'Dos Pinos', 24.5, 13, 'CREATE');
 call CRUD_PROVEEDOR(2000, 'Verdulería Feliz', 35.7, 12, 'CREATE');
 call CRUD_PROVEEDOR(3000, 'Electrodomesticos KSA', 50.0, 11, 'CREATE');
 
 call CRUD_IMPUESTO(13, 13.0, 'IVA',  'CREATE');
 call CRUD_IMPUESTO(1, 0.0, 'Excento',  'CREATE');
-call CRUD_IMPUESTO(65, 6.5, 'IVA MITAD',  'CREATE');
+call CRUD_IMPUESTO(2, 2.0, 'Canasta Basica',  'CREATE');
 
 call CRUD_TIPPRODU(110, 'Fruta', 'Fruta', 13, 'CREATE');
 call CRUD_TIPPRODU(220, 'Verdura', 'Verdura', 13, 'CREATE');
