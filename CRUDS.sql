@@ -368,26 +368,109 @@ delimiter //
 CREATE PROCEDURE CRUD_PERSONA(pIdentPers INT, pNombre VARCHAR(30), pApellidos VARCHAR(30), 
 										pFechaNaci DATE, pDirecResi VARCHAR(20), pCodSexo INT, pCodCiudad INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PERSONA(Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Residencia, Cod_Sexo, Cod_Ciudad)
-		VALUES(pIdentPers, pNombre, pApellidos, pFechaNaci, pDirecResi, pCodSexo, pCodCiudad);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Residencia, Cod_Sexo, Cod_Ciudad
-		FROM PERSONA
-		WHERE Identificacion_Per = pIdentPers;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE SEXO
-		SET Nombre=IFNULL(pNombre, Nombre), Apellidos=IFNULL(pApellidos, Apellidos),Direccion_Residencia=IFNULL(pDirecResi,Direccion_Residencia), Cod_Sexo=IFNULL(pCodSexo,Cod_Sexo), Cod_Ciudad=IFNULL(pCodCiudad,Cod_Ciudad)
-		WHERE Identificacion_Per = pIdentPers;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pIdentPers IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PERSONA
-		WHERE Identificacion_Per = pIdentPers;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) = 0) THEN
+				IF (pNombre != ''  AND pNombre IS NOT NULL) THEN
+					IF (pApellidos != ''  AND pApellidos IS NOT NULL) THEN
+						IF (pFechaNaci IS NOT NULL) THEN
+							IF (pDirecResi != ''  AND pDirecResi IS NOT NULL) THEN
+								IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+									IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
+										INSERT INTO PERSONA(Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Residencia, Cod_Sexo, Cod_Ciudad)
+										VALUES(pIdentPers, pNombre, pApellidos, pFechaNaci, pDirecResi, pCodSexo, pCodCiudad);
+									ELSE
+										SET msgError = 'El codigo de ciudad no existe';
+										SELECT msgError;
+									END IF;
+                                ELSE
+									SET msgError = 'El codigo de sexo no existe';
+									SELECT msgError;
+								END IF;
+							ELSE
+								SET msgError = 'La direccion de residencia está vacía';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'La fecha de nacimiento está vacía';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'Los apellidos están vacíos';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'El nombre está vacío';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'La identificacion personal ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) > 0) THEN
+				SELECT Identificacion_Per, Nombre, Apellidos, Fecha_Nacimiento, Direccion_Residencia, Cod_Sexo, Cod_Ciudad
+				FROM PERSONA
+				WHERE Identificacion_Per = pIdentPers;
+			ELSE
+				SET msgError = 'La identificacion personal no existe, no se puede hacer la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) > 0) THEN
+				IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+					IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
+						UPDATE PERSONA
+						SET Nombre=IFNULL(pNombre, Nombre), Apellidos=IFNULL(pApellidos, Apellidos),Direccion_Residencia=IFNULL(pDirecResi,Direccion_Residencia), Cod_Sexo=IFNULL(pCodSexo,Cod_Sexo), Cod_Ciudad=IFNULL(pCodCiudad,Cod_Ciudad)
+						WHERE Identificacion_Per = pIdentPers;
+					ELSE
+						SET msgError = 'El codigo de ciudad no existe, no se puede actualizar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El codigo de sexo no existe, no se puede actualizar';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'La identificacion personal no existe, no se puede actualizar';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) > 0) THEN
+				IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Identificacion_Per = pIdentPers) = 0) THEN
+					IF ((SELECT COUNT(*) FROM USUARIO WHERE Identificacion_Per = pIdentPers) = 0) THEN
+						IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) = 0) THEN
+							DELETE FROM PERSONA
+							WHERE Identificacion_Per = pIdentPers;
+						ELSE
+							SET msgError = 'No se puede eliminar, persona asociada a telefono personal';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'No se puede eliminar, persona asociada a usuario';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, persona asociada a empleado';
+					SELECT msgError;
+				END IF;
+            ELSE
+				SET msgError = 'No se puede eliminar, identificacion personal no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+	ELSE
+		SET msgError = 'La identificacion personal está vacía';
+        SELECT msgError;
 	END IF;
 END;
 //
