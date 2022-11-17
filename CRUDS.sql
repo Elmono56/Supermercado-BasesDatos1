@@ -1630,15 +1630,15 @@ END;
 
 /*------------------------------------------------------------ BONOS_EMPLEADO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_BONOSEMP(pNumBono INT,  pCodEmpleado INT, pNumFact INT, pMontoBono FLOAT, pFechaBono DATE, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_BONOSEMP(pNumBono INT,  pCodEmpleado INT, pMontoBono FLOAT, pFechaBono DATE, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO BONOS_EMPLEADO(Cod_Empleado, Num_Factura, MontoBono, Fecha_Bono)
-		VALUES(pCodEmpleado, pNumFact, pMontoBono, pFechaBono);
+		INSERT INTO BONOS_EMPLEADO(Cod_Empleado, MontoBono, Fecha_Bono)
+		VALUES(pCodEmpleado, pMontoBono, pFechaBono);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Num_Bono, Cod_Empleado, Num_Factura, MontoBono, Fecha_Bono
+		SELECT Num_Bono, Cod_Empleado, MontoBono, Fecha_Bono
 		FROM BONOS_EMPLEADO
 		WHERE Num_Bono = pNumBono;
   END IF;

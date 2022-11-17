@@ -232,12 +232,10 @@ CREATE TABLE `FACTURA` (
 CREATE TABLE `BONOS_EMPLEADO` (
   `Num_Bono` INT NOT NULL AUTO_INCREMENT,
   `Cod_Empleado` INT NOT NULL,
-  `Num_Factura` INT NOT NULL,
   `MontoBono` FLOAT NOT NULL,
   `Fecha_Bono` DATE NOT NULL,
   PRIMARY KEY (`Num_Bono`),
-  FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`),
-  FOREIGN KEY (`Num_Factura`) REFERENCES `FACTURA`(`Num_Factura`)
+  FOREIGN KEY (`Cod_Empleado`) REFERENCES `EMPLEADO`(`Cod_Empleado`)
 );
 
 CREATE TABLE `PRODUCTO_EXPIRADO` (
@@ -1880,15 +1878,15 @@ END;
 
 /*------------------------------------------------------------ BONOS_EMPLEADO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_BONOSEMP(pNumBono INT,  pCodEmpleado INT, pNumFact INT, pMontoBono FLOAT, pFechaBono DATE, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_BONOSEMP(pNumBono INT,  pCodEmpleado INT, pMontoBono FLOAT, pFechaBono DATE, pOperacion VARCHAR(10))
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO BONOS_EMPLEADO(Cod_Empleado, Num_Factura, MontoBono, Fecha_Bono)
-		VALUES(pCodEmpleado, pNumFact, pMontoBono, pFechaBono);
+		INSERT INTO BONOS_EMPLEADO(Cod_Empleado, MontoBono, Fecha_Bono)
+		VALUES(pCodEmpleado, pMontoBono, pFechaBono);
 	END IF;
 
 	IF (pOperacion = 'READ') THEN
-		SELECT Num_Bono, Cod_Empleado, Num_Factura, MontoBono, Fecha_Bono
+		SELECT Num_Bono, Cod_Empleado, MontoBono, Fecha_Bono
 		FROM BONOS_EMPLEADO
 		WHERE Num_Bono = pNumBono;
   END IF;
