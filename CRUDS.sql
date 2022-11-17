@@ -1051,26 +1051,70 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_CHEQUE(pCodCliente INT, pNumCheque VARCHAR(20), pContCheque INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO CHEQUE(Cod_Cliente, Num_Cheque)
-		VALUES(pCodCliente, pNumCheque);
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodCliente IS NOT NULL) THEN
+		IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0)THEN
+        
+			IF (pOperacion = 'CREATE') THEN
+				IF (pNumCheque != '' AND pNumCheque IS NOT NULL) THEN
+					INSERT INTO CHEQUE(Cod_Cliente, Num_Cheque)
+					VALUES(pCodCliente, pNumCheque);
+				ELSE
+					SET msgError = 'El numero de cheque está vacío';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Cliente, Num_Cheque, Contador_Cheque
-		FROM CHEQUE
-		WHERE Cod_Cliente = pCodCliente;
-  END IF;
+			IF (pOperacion = 'READ') THEN
+				IF ((SELECT COUNT(*) FROM CHEQUE WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					SELECT Cod_Cliente, Num_Cheque, Contador_Cheque
+					FROM CHEQUE
+					WHERE Cod_Cliente = pCodCliente;
+				ELSE
+					SET msgError = 'El cliente no tiene cheques asociados';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE CHEQUE
-		SET Num_Cheque = IFNULL(pNumCheque,Num_Cheque)
-		WHERE Cod_Cliente = pCodCliente AND Contador_Cheque = pContCheque;
-	END IF;
-    
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM CHEQUE
-		WHERE Cod_Cliente = pCodCliente AND Contador_Cheque = pContCheque;
+			IF (pOperacion = 'UPDATE')  THEN
+				IF ((SELECT COUNT(*) FROM CHEQUE WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					IF ((SELECT COUNT(*) FROM CHEQUE WHERE Contador_Cheque = pContCheque) > 0) THEN
+						UPDATE CHEQUE
+						SET Num_Cheque = IFNULL(pNumCheque, Num_Cheque)
+						WHERE Cod_Cliente = pCodCliente AND Contador_Cheque = pContCheque;
+					ELSE
+						SET msgError = 'El ID de cheque no existe, imposible actualizar datos';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El cliente no tiene cheques asociados';
+					SELECT msgError;
+				END IF;
+			END IF;
+			
+			IF (pOperacion = 'DELETE') THEN
+				IF ((SELECT COUNT(*) FROM CHEQUE WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					IF ((SELECT COUNT(*) FROM CHEQUE WHERE Contador_Cheque = pContCheque) > 0) THEN
+						DELETE FROM CHEQUE
+						WHERE Cod_Cliente = pCodCliente AND Contador_Cheque = pContCheque;
+					ELSE
+						SET msgError = 'El ID de cheque no existe, no se puede eliminar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El cliente no tiene cheques asociados';
+					SELECT msgError;
+				END IF;
+			END IF;
+            
+			ELSE
+				SET msgError = 'El codigo de cliente no existe';
+				SELECT msgError;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de cliente es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
