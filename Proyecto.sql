@@ -467,6 +467,7 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_SUCURSAL(pCodSucursal INT, pNombreSucursal VARCHAR(40), pCodCiudad INT, pOperacion VARCHAR(10))
 BEGIN
+	DECLARE msgError VARCHAR(70) DEFAULT '';
 	IF (pCodSucursal IS NOT NULL) THEN
     
 		IF (pOperacion = 'CREATE') THEN

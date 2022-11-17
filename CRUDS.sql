@@ -225,6 +225,7 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_SUCURSAL(pCodSucursal INT, pNombreSucursal VARCHAR(40), pCodCiudad INT, pOperacion VARCHAR(10))
 BEGIN
+	DECLARE msgError VARCHAR(70) DEFAULT '';
 	IF (pCodSucursal IS NOT NULL) THEN
     
 		IF (pOperacion = 'CREATE') THEN
@@ -807,59 +808,64 @@ CREATE PROCEDURE CRUD_TELEFPERSO(pIdentPers INT, pNumTel VARCHAR(15), pContTelef
 BEGIN
 DECLARE msgError VARCHAR(70) DEFAULT '';
 	IF (pIdentPers IS NOT NULL) THEN
+		IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) > 0)THEN
+			IF (pOperacion = 'CREATE') THEN
+				IF (pNumTel != '' AND pNumTel IS NOT NULL) THEN
+					INSERT INTO TELEF_PERSO(Identificacion_Per, Num_Telef)
+					VALUES(pIdentPers, pNumTel);
+				ELSE
+					SET msgError = 'El numero de telefono está vacío';
+					SELECT msgError;
+				END IF;
+			END IF;
+
+			IF (pOperacion = 'READ') THEN
+				IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
+					SELECT Identificacion_Per, Num_Telef, Contador_Telef
+					FROM TELEF_PERSO
+					WHERE Identificacion_Per = pIdentPers;
+				ELSE
+					SET msgError = 'La persona no tiene numeros de telefono asociados';
+					SELECT msgError;
+				END IF;
+			END IF;
+
+			IF (pOperacion = 'UPDATE')  THEN
+				IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
+					IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Contador_Telef = pContTelef) > 0) THEN
+						UPDATE TELEF_PERSO
+						SET Num_Telef = IFNULL(pNumTel, Num_Telef)
+						WHERE Identificacion_Per = pIdentPers AND Contador_Telef = pContTelef;
+					ELSE
+						SET msgError = 'El ID del telefono no existe, imposible actualizar datos';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'La persona no tiene numeros de telefono asociados';
+					SELECT msgError;
+				END IF;
+			END IF;
+			
+			IF (pOperacion = 'DELETE') THEN
+				IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
+					IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Contador_Telef = pContTelef) = 0) THEN
+						DELETE FROM TELEF_PERSO
+						WHERE Identificacion_Per = pIdentPers AND Contador_Telef = pContTelef;
+					ELSE
+						SET msgError = 'No se puede eliminar, el ID del telefono no existe';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'La persona no tiene numeros de telefono asociados';
+					SELECT msgError;
+				END IF;
+			END IF;
+            
+        ELSE
+			SET msgError = 'El numero de identificacion no existe';
+			SELECT msgError;
+	END IF;
     
-		IF (pOperacion = 'CREATE') THEN
-			IF (pNumTel != '' AND pNumTel IS NOT NULL) THEN
-				INSERT INTO TELEF_PERSO(Identificacion_Per, Num_Telef)
-				VALUES(pIdentPers, pNumTel);
-			ELSE
-				SET msgError = 'El numero de telefono está vacío';
-				SELECT msgError;
-			END IF;
-		END IF;
-
-		IF (pOperacion = 'READ') THEN
-			IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
-				SELECT Identificacion_Per, Num_Telef, Contador_Telef
-				FROM TELEF_PERSO
-				WHERE Identificacion_Per = pIdentPers;
-			ELSE
-				SET msgError = 'La persona no tiene numeros de telefono asociados';
-				SELECT msgError;
-			END IF;
-		END IF;
-
-		IF (pOperacion = 'UPDATE')  THEN
-			IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
-				IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Contador_Telef = pContTelef) > 0) THEN
-					UPDATE TELEF_PERSO
-					SET Num_Telef = IFNULL(pNumTel, Num_Telef)
-					WHERE Identificacion_Per = pIdentPers AND Contador_Telef = pContTelef;
-				ELSE
-					SET msgError = 'El ID del telefono no existe, imposible actualizar datos';
-					SELECT msgError;
-				END IF;
-            ELSE
-				SET msgError = 'La persona no tiene numeros de telefono asociados';
-				SELECT msgError;
-			END IF;
-		END IF;
-        
-		IF (pOperacion = 'DELETE') THEN
-			IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
-				IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Contador_Telef = pContTelef) = 0) THEN
-					DELETE FROM TELEF_PERSO
-					WHERE Identificacion_Per = pIdentPers AND Contador_Telef = pContTelef;
-				ELSE
-					SET msgError = 'No se puede eliminar, el ID del telefono no existe';
-					SELECT msgError;
-				END IF;
-			ELSE
-				SET msgError = 'La persona no tiene numeros de telefono asociados';
-				SELECT msgError;
-			END IF;
-		END IF;
-        
 	ELSE
 		SET msgError = 'El numero de cedula es vacío';
         SELECT msgError;
@@ -901,26 +907,70 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_CRIPTOCARTERA(pCodCliente INT, pNumCriptoCart VARCHAR(25), pContCriptoC INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO CRIPTOCARTERA(Cod_Cliente, Num_Cripto_Cartera)
-		VALUES(pCodCliente, pNumCriptoCart);
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodCliente IS NOT NULL) THEN
+		IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0)THEN
+        
+			IF (pOperacion = 'CREATE') THEN
+				IF (pNumCriptoCart != '' AND pNumCriptoCart IS NOT NULL) THEN
+					INSERT INTO CRIPTOCARTERA(Cod_Cliente, Num_Cripto_Cartera)
+					VALUES(pCodCliente, pNumCriptoCart);
+				ELSE
+					SET msgError = 'El numero de cripto cartera está vacío';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Cliente, Num_Cripto_Cartera, Contador_CriptoCar
-		FROM CRIPTOCARTERA
-		WHERE Cod_Cliente = pCodCliente;
-  END IF;
+			IF (pOperacion = 'READ') THEN
+				IF ((SELECT COUNT(*) FROM CRIPTOCARTERA WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					SELECT Cod_Cliente, Num_Cripto_Cartera, Contador_CriptoCar
+					FROM CRIPTOCARTERA
+					WHERE Cod_Cliente = pCodCliente;
+				ELSE
+					SET msgError = 'El cliente no tiene cripto carteras asociadas';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE CRIPTOCARTERA
-		SET Num_Cripto_Cartera = IFNULL(pNumCriptoCart,Num_Cripto_Cartera)
-		WHERE Cod_Cliente = pCodCliente AND Contador_CriptoCar = pContCriptoC;
-	END IF;
-    
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM CRIPTOCARTERA
-		WHERE Cod_Cliente = pCodCliente AND Contador_CriptoCar = pContCriptoC;
+			IF (pOperacion = 'UPDATE')  THEN
+				IF ((SELECT COUNT(*) FROM CRIPTOCARTERA WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					IF ((SELECT COUNT(*) FROM CRIPTOCARTERA WHERE Contador_CriptoCar = pContCriptoC) > 0) THEN
+						UPDATE CRIPTOCARTERA
+						SET Num_Cripto_Cartera = IFNULL(pNumCriptoCart, Num_Cripto_Cartera)
+						WHERE Cod_Cliente = pCodCliente AND Contador_CriptoCar = pContCriptoC;
+					ELSE
+						SET msgError = 'El ID de cripto cartera no existe, imposible actualizar datos';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El cliente no tiene cripto carteras asociadas';
+					SELECT msgError;
+				END IF;
+			END IF;
+			
+			IF (pOperacion = 'DELETE') THEN
+				IF ((SELECT COUNT(*) FROM CRIPTOCARTERA WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					IF ((SELECT COUNT(*) FROM CRIPTOCARTERA WHERE Contador_CriptoCar = pContCriptoC) = 0) THEN
+						DELETE FROM CRIPTOCARTERA
+						WHERE Cod_Cliente = pCodCliente AND Contador_CriptoCar = pContCriptoC;
+					ELSE
+						SET msgError = 'El ID de cripto cartera no existe, no se puede eliminar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El cliente no tiene cripto carteras asociadas';
+					SELECT msgError;
+				END IF;
+			END IF;
+            
+			ELSE
+				SET msgError = 'El codigo de cliente no existe';
+				SELECT msgError;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de cliente es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -929,26 +979,70 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_TARJECREDI(pCodCliente INT, pNumTarjeCredi VARCHAR(20), pContTarjeCre INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO TARJETA_CREDITO(Cod_Cliente, Num_Tarjeta_Credito)
-		VALUES(pCodCliente, pNumTarjeCredi);
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodCliente IS NOT NULL) THEN
+		IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0)THEN
+        
+			IF (pOperacion = 'CREATE') THEN
+				IF (pNumTarjeCredi != '' AND pNumTarjeCredi IS NOT NULL) THEN
+					INSERT INTO TARJETA_CREDITO(Cod_Cliente, Num_Tarjeta_Credito)
+					VALUES(pCodCliente, pNumTarjeCredi);
+				ELSE
+					SET msgError = 'El numero de tarjeta de credito está vacío';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Cliente, Num_Tarjeta_Credito, Contador_TarjCre
-		FROM TARJETA_CREDITO
-		WHERE Cod_Cliente = pCodCliente;
-  END IF;
+			IF (pOperacion = 'READ') THEN
+				IF ((SELECT COUNT(*) FROM TARJETA_CREDITO WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					SELECT Cod_Cliente, Num_Tarjeta_Credito, Contador_TarjCre
+					FROM TARJETA_CREDITO
+					WHERE Cod_Cliente = pCodCliente;
+				ELSE
+					SET msgError = 'El cliente no tiene cripto carteras asociadas';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE TARJETA_CREDITO
-		SET Num_Tarjeta_Credito = IFNULL(pNumTarjeCredi,Num_Tarjeta_Credito)
-		WHERE Cod_Cliente = pCodCliente AND Contador_TarjCre = pContTarjeCre;
-	END IF;
-    
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM TARJETA_CREDITO
-		WHERE Cod_Cliente = pCodCliente AND Contador_TarjCre = pContTarjeCre;
+			IF (pOperacion = 'UPDATE')  THEN
+				IF ((SELECT COUNT(*) FROM TARJETA_CREDITO WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					IF ((SELECT COUNT(*) FROM TARJETA_CREDITO WHERE Contador_TarjCre = pContTarjeCre) > 0) THEN
+						UPDATE TARJETA_CREDITO
+						SET Num_Tarjeta_Credito = IFNULL(pNumTarjeCredi, Num_Tarjeta_Credito)
+						WHERE Cod_Cliente = pCodCliente AND Contador_TarjCre = pContTarjeCre;
+					ELSE
+						SET msgError = 'El ID de tarjeta de credito no existe, imposible actualizar datos';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El cliente no tiene tarjetas de credito asociadas';
+					SELECT msgError;
+				END IF;
+			END IF;
+			
+			IF (pOperacion = 'DELETE') THEN
+				IF ((SELECT COUNT(*) FROM TARJETA_CREDITO WHERE Cod_Cliente = pCodCliente) > 0) THEN
+					IF ((SELECT COUNT(*) FROM TARJETA_CREDITO WHERE Contador_TarjCre = pContTarjeCre) > 0) THEN
+						DELETE FROM TARJETA_CREDITO
+						WHERE Cod_Cliente = pCodCliente AND Contador_TarjCre = pContTarjeCre;
+					ELSE
+						SET msgError = 'El ID de tarjeta de credito no existe, no se puede eliminar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El cliente no tiene tarjetas de credito asociadas';
+					SELECT msgError;
+				END IF;
+			END IF;
+            
+			ELSE
+				SET msgError = 'El codigo de cliente no existe';
+				SELECT msgError;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de cliente es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
