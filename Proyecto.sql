@@ -79,6 +79,7 @@ CREATE TABLE `USUARIO` (
   `Cod_Usuario` INT NOT NULL UNIQUE,
   `Nombre_Usuario` VARCHAR(20) NOT NULL,
   `Contraseña` VARCHAR(20) NOT NULL,
+  `CorreoElec` VARCHAR(30) NOT NULL,
   `Cod_Tipo_Usuario` INT NOT NULL,
   `Identificacion_Per` INT NOT NULL UNIQUE,
   PRIMARY KEY (`Cod_Usuario`),
@@ -896,28 +897,96 @@ END;
 
 /*------------------------------------------------------------ USUARIO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_USUARIO(pCodUsu INT,  pNombUsu VARCHAR(20), pContra VARCHAR(20), pCodTipUsu INT, pIdentPers INT, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_USUARIO(pCodUsu INT,  pNombUsu VARCHAR(20), pContra VARCHAR(20), pCorreoE VARCHAR(30), pCodTipUsu INT, pIdentPers INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO USUARIO(Cod_Usuario, Nombre_Usuario, Contraseña, Cod_Tipo_Usuario, Identificacion_Per)
-		VALUES(pCodUsu, pNombUsu, pContra, pCodTipUsu, pIdentPers);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Usuario, Nombre_Usuario, Contraseña, Cod_Tipo_Usuario, Identificacion_Per
-		FROM USUARIO
-		WHERE Cod_Usuario = pCodUsu;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE USUARIO
-		SET  Nombre_Usuario=IFNULL(pNombUsu,Nombre_Usuario), Contraseña=IFNULL(pContra,Contraseña), Cod_Tipo_Usuario=IFNULL(pCodTipUsu,Cod_Tipo_Usuario)
-		WHERE Cod_Usuario = pCodUsu;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodUsu IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM USUARIO
-		WHERE Cod_Usuario = pCodUsu;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM USUARIO WHERE Cod_Usuario = pCodUsu) = 0) THEN
+				IF (pNombUsu != ''  AND pNombUsu IS NOT NULL) THEN
+					IF (pContra != ''  AND pContra IS NOT NULL) THEN
+						IF (pCorreoE != ''  AND pCorreoE IS NOT NULL) THEN
+								IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+									IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) > 0) THEN
+										INSERT INTO USUARIO(Cod_Usuario, Nombre_Usuario, Contraseña, CorreoElec, Cod_Tipo_Usuario, Identificacion_Per)
+										VALUES(pCodUsu, pNombUsu, pContra, pCorreoE, pCodTipUsu, pIdentPers);
+									ELSE
+										SET msgError = 'La identificacion personal no existe';
+										SELECT msgError;
+									END IF;
+                                ELSE
+									SET msgError = 'El codigo de tipo de usuario no existe';
+									SELECT msgError;
+								END IF;
+						ELSE
+							SET msgError = 'El correo electrónico está vacío';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'La contraseña está vacía';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'El nombre está vacío';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El nombre de usuario está vacío';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM USUARIO WHERE Cod_Usuario = pCodUsu) > 0) THEN
+				SELECT Cod_Usuario, Nombre_Usuario, Contraseña, CorreoElec, Cod_Tipo_Usuario, Identificacion_Per
+				FROM USUARIO
+				WHERE Cod_Usuario = pCodUsu;
+			ELSE
+				SET msgError = 'El codigo de usuario no existe, no se puede hacer la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM USUARIO WHERE Cod_Usuario = pCodUsu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+					IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) > 0) THEN
+						UPDATE USUARIO
+						SET Nombre=Nombre_Usuario=IFNULL(pNombUsu,Nombre_Usuario), Contraseña=IFNULL(pContra,Contraseña), Cod_Tipo_Usuario=IFNULL(pCodTipUsu,Cod_Tipo_Usuario), CorreoElec=IFNULL(pCorreoE,CorreoElec)
+						WHERE Cod_Usuario = pCodUsu;
+					ELSE
+						SET msgError = 'La identificacion personal no existe, no se puede actualizar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El codigo de tipo de usuario no existe, no se puede actualizar';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El codigo de usuario no existe, no se puede actualizar';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM USUARIO WHERE Cod_Usuario = pCodUsu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Usuario = pCodUsu) = 0) THEN
+					DELETE FROM USUARIO
+					WHERE Cod_Usuario = pCodUsu;
+				ELSE
+					SET msgError = 'No se puede eliminar, usuario asociada a cliente';
+					SELECT msgError;
+				END IF;
+            ELSE
+				SET msgError = 'No se puede eliminar, codigo de usuario no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+	ELSE
+		SET msgError = 'El codigo de usuario está vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -2147,9 +2216,10 @@ call CRUD_TIPUSUARIO(1,'Basico','CREATE');
 call CRUD_TIPUSUARIO(2,'Starter','CREATE');
 call CRUD_TIPUSUARIO(3,'Premiun','CREATE');
 
-call CRUD_USUARIO(250, 'Javezuela1','1234',1,155555555,'CREATE');
-call CRUD_USUARIO(260, 'AloOvi','abcd',2,166666666,'CREATE');
-call CRUD_USUARIO(270, 'SoloJosueF','Fabi15',3,177777777,'CREATE');
+call CRUD_USUARIO(250, 'Javezuela1','1234', 'javiZZZ@gmail.com',1,155555555,'CREATE');
+call CRUD_USUARIO(260, 'AloOvi','abcd', 'alonsoO@gmail.com',2,166666666,'CREATE');
+call CRUD_USUARIO(270, 'SoloJosueF','Fabi15', 'josueF@gmail.com',3,177777777,'CREATE');
+call CRUD_USUARIO(280, 'PabloHHH','32545', 'pablo@gmail.com',1,118440792,'CREATE');
 
 call CRUD_CLIENTE(250,250,'CREATE');
 call CRUD_CLIENTE(260,260,'CREATE');
