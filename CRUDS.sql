@@ -499,26 +499,64 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_TIPUSUARIO(pCodTipUsu INT, pDescTipUsu VARCHAR(30), pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO TIPO_USUARIO(Cod_Tipo_Usuario, Descrip_TipUsu)
-		VALUES(pCodTipUsu, pDescTipUsu);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Tipo_Usuario, Descrip_TipUsu
-		FROM TIPO_USUARIO
-		WHERE Cod_Tipo_Usuario = pCodTipUsu;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE TIPO_USUARIO
-		SET  Descrip_TipUsu=IFNULL(pDescTipUsu,Descrip_TipUsu)
-		WHERE Cod_Tipo_Usuario = pCodTipUsu;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodTipUsu IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM TIPO_USUARIO
-		WHERE Cod_Tipo_Usuario = pCodTipUsu;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) = 0) THEN
+				IF (pDescTipUsu != '') THEN
+					INSERT INTO TIPO_USUARIO(Cod_Tipo_Usuario, Descrip_TipUsu)
+					VALUES(pCodTipUsu, pDescTipUsu);
+				ELSE
+					SET msgError = 'La descripción del tipo de usuario está vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de tipo de usuario ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+				SELECT Cod_Tipo_Usuario, Descrip_TipUsu
+				FROM TIPO_USUARIO
+				WHERE Cod_Tipo_Usuario = pCodTipUsu;
+			ELSE
+				SET msgError = 'El codigo de tipo usuario no existe, imposible realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+				UPDATE TIPO_USUARIO
+				SET Descrip_TipUsu = IFNULL( pDescTipUsu, Descrip_TipUsu)
+				WHERE Cod_Tipo_Usuario = pCodTipUsu;
+			ELSE
+				SET msgError = 'El codigo de tipo usuario no existe, imposible realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) = 0) THEN
+					DELETE FROM TIPO_USUARIO
+					WHERE Cod_Tipo_Usuario = pCodTipUsu;
+				ELSE
+					SET msgError = 'No se puede eliminar, tipo de usuario asociado a usuario';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de tipo de usuario no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de tipo de usuario es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -607,26 +645,74 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_IMPUESTO(pCodImpu INT, pPorcImpu FLOAT, pDescImpu VARCHAR(20),  pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO IMPUESTO(Cod_Impuesto, Porcentaje_Imp, Descrip_Imp)
-		VALUES(pCodImpu, pPorcImpu, pDescImpu);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Impuesto, Porcentaje_Imp, Descrip_Imp
-		FROM IMPUESTO
-		WHERE Cod_Impuesto = pCodImpu;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE IMPUESTO
-		SET Porcentaje_Imp = IFNULL(pPorcImpu,Porcentaje_Imp), Descrip_Imp=IFNULL(Descrip_Imp,Descrip_Imp)
-		WHERE Cod_Impuesto = pCodImpu;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodImpu IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM IMPUESTO
-		WHERE Cod_Impuesto = pCodImpu;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM IMPUESTO WHERE Cod_Impuesto = pCodImpu) = 0) THEN
+				IF (pDescImpu != '') THEN
+					IF ((pPorcImpu IS NOT NULL) AND (pPorcImpu >= 0 )) THEN
+						INSERT INTO IMPUESTO(Cod_Impuesto, Porcentaje_Imp, Descrip_Imp)
+						VALUES(pCodImpu, pPorcImpu, pDescImpu);
+					ELSE
+						SET msgError = 'El porcentaje del impuesto ingresado no es válido';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'La descripción del impuesto está vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de impuesto ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM IMPUESTO WHERE Cod_Impuesto = pCodImpu) > 0) THEN
+				SELECT Cod_Impuesto, Porcentaje_Imp, Descrip_Imp
+				FROM IMPUESTO
+				WHERE Cod_Impuesto = pCodImpu;
+			ELSE
+				SET msgError = 'El impuesto no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM IMPUESTO WHERE Cod_Impuesto = pCodImpu) > 0) THEN
+				IF ((pPorcImpu IS NOT NULL) AND (pPorcImpu >= 0 )) THEN
+					UPDATE IMPUESTO
+					SET Descrip_Imp = IFNULL( pDescImpu, Descrip_Imp), Porcentaje_Imp = IFNULL( pPorcImpu, Porcentaje_Imp)
+					WHERE Cod_Impuesto = pCodImpu;
+				ELSE
+                SET msgError = 'El porcentaje del impuesto ingresado no es válido';
+				SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El impuesto no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM IMPUESTO WHERE Cod_Impuesto = pCodImpu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM TIPO_PRODUCTO WHERE Cod_Impuesto = pCodImpu) = 0) THEN
+					DELETE FROM IMPUESTO
+					WHERE Cod_Impuesto = pCodImpu;
+				ELSE
+					SET msgError = 'No se puede eliminar, impuesto asociado a tipo producto';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el impuesto no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de impuesto es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
