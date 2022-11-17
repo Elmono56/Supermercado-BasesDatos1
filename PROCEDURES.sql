@@ -6,7 +6,6 @@ DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE TIEMPO QUE LLEVA TRABAJANDO UN EMPLEADO ------------------------------------------------------------*/
 CREATE PROCEDURE TIEMPO_LABORAL_EMPLEADO (pCodEmpleado INT)
 BEGIN
-#FUNCTION supermercado.GETDATE does not exist	
     DECLARE Fecha_Actual DATE;
     SET Fecha_Actual = NOW();
     SELECT DATEDIFF(Fecha_Actual, EMPLEADO.Fecha_Contratado)
@@ -41,8 +40,6 @@ END
 
 DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE PRODUCTOS EN UNA SUCURSAL ------------------------------------------------------------*/
-#¿productos totales o de uno en específico?
-#arreglar el inner join
 CREATE PROCEDURE PRODUCTOS_SUCURSAL(pCodSucursal INT)
 BEGIN
     SELECT SUM(BODEGA_SUCURSAL_PRODUCTO.Cantidad_Actual)
@@ -175,7 +172,6 @@ BEGIN
 END
 //
 
-/*ESTOS DE ABAJO NO SIRVEN*/
 DELIMITER //
 -- RETORNA EL IMPUESTO CORRESPONDIENTE A ESE PRODUCTO
 CREATE FUNCTION SACAR_IMPUESTO_PRODUCTO (COD_PRODUCTO INT) RETURNS INT
@@ -226,7 +222,6 @@ BEGIN
 			SET DESCUENTO = 10.0;
 	END IF;
     
-    -- 	¿AQUI LE PONEMOS LO DEL ENVIO? EL 0.1% DEL MONTO
     SET IMPUESTO = SACAR_IMPUESTO_PRODUCTO(COD_PRODUCTO);
 	SET TOTAL = PRODUCTO_VENTA + 
 				(PRODUCTO_VENTA * IMPUESTO) /100 -
@@ -334,10 +329,25 @@ END
 //
 
 DELIMITER //
+/*---------------------------------------------------- ASIGNA EL BONO A UN EMPLEADO -------------------------------------------------------*/
 CREATE PROCEDURE BONOS_EMPLEADO_ASIGNACION (pCOD_EMPLEADO INT, pMONTO_BONO FLOAT, pFECHA_BONO DATE)
 BEGIN
 	IF (CANTIDAD_FACTURAS_EMPLEADO(pCOD_EMPLEADO) > 20) THEN
-		INSERT INTO BONOS_EMPLEADO VALUES (pCOD_EMPLEADO, 102120, pMONTO_BONO, pFECHA_BONO);
+		-- MANDAR A LLAMAR EL CRUD DE LA TABLA BONOS_EMPLEADO EN VEZ DE ESTO
+		-- INSERT INTO BONOS_EMPLEADO VALUES (pCOD_EMPLEADO, pMONTO_BONO, pFECHA_BONO);
+        CALL CRUD_BONOSEMP (pCOD_EMPLEADO, 1234, pMONTO_BONO, pFECHA_BONO, 'CREATE');
+	END IF;
+END
+//
+
+DELIMITER //
+/*---------------------------------------------------- RETIRA LOS PRODUCTOS EXPIRADOS DE LA SUCURSAL -------------------------------------------------------*/
+CREATE PROCEDURE RETIRA_PRODUCTOS_EXPIRADOS (COD_PRODUCTO INT)
+BEGIN
+	IF (DIAS_CADUCIDAD_PRODUCTO(COD_PRODUCTO) < 0) THEN
+		CALL CRUD_PRODUCTO_EXPIRADO ( COD_PRODUCTO, (SELECT NOMBRE_PRODUCTO FROM PRODUCTO WHERE COD_PRODUCTO = PRODUCTO.COD_PRODUCTO), 'CREATE');
+        -- (pCodBodega INT, pCodProdu INT, pCodSucursal INT, pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra INT, pCantCompra INT, pFechaProduc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
+        -- CALL CRUD_BODESUCUPRODU (COD_PRODUCTO, 'pCodSucursal INT', 
 	END IF;
 END
 //
