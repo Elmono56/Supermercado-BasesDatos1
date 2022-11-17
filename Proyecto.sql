@@ -1153,26 +1153,89 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_PROVEEDOR(pCodProveedor INT, pNomProvee VARCHAR(50), pPorcentGan FLOAT, pCodCiudad INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PROVEEDOR(Cod_Proveedor, Nombre_Proveedor, Porcentaje_Ganancia, Cod_Ciudad)
-		VALUES(pCodProveedor, pNomProvee, pPorcentGan, pCodCiudad);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Proveedor, Nombre_Proveedor, Porcentaje_Ganancia, Cod_Ciudad
-		FROM PROVEEDOR
-		WHERE Cod_Proveedor = pCodProveedor;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PROVEEDOR
-		SET Nombre_Proveedor = IFNULL(pNomProvee,Nombre_Proveedor), Porcentaje_Ganancia = IFNULL(pPorcentGan,Porcentaje_Ganancia), Cod_Ciudad = IFNULL(pCodCiudad,Cod_Ciudad)
-		WHERE Cod_Proveedor = pCodProveedor;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodProveedor IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PROVEEDOR
-		WHERE Cod_Proveedor = pCodProveedor;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM PROVEEDOR WHERE Cod_Proveedor = pCodProveedor) = 0) THEN
+				IF (pNomProvee != '' AND pNomProvee IS NOT NULL) THEN
+					IF (pPorcentGan IS NOT NULL AND pPorcentGan>=0) THEN
+						IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
+							INSERT INTO PROVEEDOR(Cod_Proveedor, Nombre_Proveedor, Porcentaje_Ganancia, Cod_Ciudad)
+							VALUES(pCodProveedor, pNomProvee, pPorcentGan, pCodCiudad);
+						ELSE
+							SET msgError = 'El codigo de ciudad no existe';
+							SELECT msgError;
+						END IF;
+                    ELSE
+						SET msgError = 'El porcentaje de ganancia ingresado no es válido';
+						SELECT msgError;
+					END IF;
+                ELSE
+					SET msgError = 'El nombre de proveedor ingresado no es válido';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de proveedor ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PROVEEDOR WHERE Cod_Proveedor = pCodProveedor) > 0) THEN
+				SELECT Cod_Proveedor, Nombre_Proveedor, Porcentaje_Ganancia, Cod_Ciudad
+				FROM PROVEEDOR
+				WHERE Cod_Proveedor = pCodProveedor;
+			ELSE
+				SET msgError = 'El codigo proveedor no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PROVEEDOR WHERE Cod_Proveedor = pCodProveedor) > 0) THEN
+				IF (pPorcentGan IS NOT NULL AND pPorcentGan>=0) THEN
+					IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
+						UPDATE PROVEEDOR
+						SET Nombre_Proveedor = IFNULL(pNomProvee,Nombre_Proveedor), Porcentaje_Ganancia = IFNULL(pPorcentGan,Porcentaje_Ganancia), Cod_Ciudad = IFNULL(pCodCiudad,Cod_Ciudad)
+						WHERE Cod_Proveedor = pCodProveedor;
+					ELSE
+						SET msgError = 'El codigo de ciudad no existe, no se puede actualizar datos';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El porcentaje de ganancia no es válido, no se puede actualizar datos';
+					SELECT msgError;
+				END IF;
+            ELSE
+				SET msgError = 'El codigo de proveedor no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PROVEEDOR WHERE Cod_Proveedor = pCodProveedor) > 0) THEN
+				IF ((SELECT COUNT(*) FROM BODEGA_PROVEEDOR_PRODUCTO WHERE Cod_Proveedor = pCodProveedor) = 0) THEN
+					IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Proveedor = pCodProveedor) = 0) THEN
+						DELETE FROM PROVEEDOR
+						WHERE Cod_Proveedor = pCodProveedor;
+                    ELSE
+						SET msgError = 'No se puede eliminar, proveedor asociado a bodega de sucursal';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, proveedor asociado a bodega de proveedor';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de proveedor no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de proveedor es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
