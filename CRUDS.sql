@@ -594,6 +594,8 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_CLIENTE(pCodCliente INT, pCodUsu INT, pOperacion VARCHAR(10))
 BEGIN
+
+
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO CLIENTE(Cod_Cliente, Cod_Usuario)
 		VALUES(pCodCliente, pCodUsu);
@@ -722,26 +724,79 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_TIPPRODU(pCodTipProdu INT, pNomTipProdu VARCHAR(50), pDescrTipProdu VARCHAR(30),  pCodImpu INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO TIPO_PRODUCTO(Cod_Tipo_Producto, Nombre_Tipo_Producto, Descrip_Tipo_Producto, Cod_Impuesto)
-		VALUES(pCodTipProdu, pNomTipProdu, pDescrTipProdu, pCodImpu);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Tipo_Producto, Nombre_Tipo_Producto, Descrip_Tipo_Producto, Cod_Impuesto
-		FROM TIPO_PRODUCTO
-		WHERE Cod_Tipo_Producto = pCodTipProdu;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE TIPO_PRODUCTO
-		SET  Nombre_Tipo_Producto=IFNULL(pNomTipProdu,Nombre_Tipo_Producto), Descrip_Tipo_Producto=IFNULL(pDescrTipProdu,Descrip_Tipo_Producto), Cod_Impuesto=IFNULL(pCodImpu,Cod_Impuesto)
-		WHERE Cod_Tipo_Producto = pCodTipProdu;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodTipProdu IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM TIPO_PRODUCTO
-		WHERE Cod_Tipo_Producto = pCodTipProdu;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_PRODUCTO WHERE Cod_Tipo_Producto = pCodTipProdu) = 0) THEN
+				IF (pNomTipProdu != ''  AND pNomTipProdu IS NOT NULL) THEN
+					IF (pDescrTipProdu != ''  AND pDescrTipProdu IS NOT NULL) THEN
+						IF ((SELECT COUNT(*) FROM IMPUESTO WHERE Cod_Impuesto = pCodImpu) > 0) THEN
+							INSERT INTO TIPO_PRODUCTO(Cod_Tipo_Producto, Nombre_Tipo_Producto, Descrip_Tipo_Producto, Cod_Impuesto)
+							VALUES(pCodTipProdu, pNomTipProdu, pDescrTipProdu, pCodImpu);
+						ELSE
+							SET msgError = 'El codigo de impuesto no existe';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'La descripción del tipo de producto está vacía';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'El nombre del tipo de producto está vacío';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de tipo de producto ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_PRODUCTO WHERE Cod_Tipo_Producto = pCodTipProdu) > 0) THEN
+				SELECT Cod_Tipo_Producto, Nombre_Tipo_Producto, Descrip_Tipo_Producto, Cod_Impuesto
+				FROM TIPO_PRODUCTO
+				WHERE Cod_Tipo_Producto = pCodTipProdu;
+			ELSE
+				SET msgError = 'El codigo de tipo de producto no existe, no se puede hacer la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM TIPO_PRODUCTO WHERE Cod_Tipo_Producto = pCodTipProdu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM IMPUESTO WHERE Cod_Tipo_Producto = pCodTipProdu) > 0) THEN
+					UPDATE TIPO_PRODUCTO
+					SET Nombre_Tipo_Producto=IFNULL(pNomTipProdu,Nombre_Tipo_Producto), Descrip_Tipo_Producto=IFNULL(pDescrTipProdu,Descrip_Tipo_Producto), Cod_Impuesto=IFNULL(pCodImpu,Cod_Impuesto)
+					WHERE Cod_Tipo_Producto = pCodTipProdu;
+				ELSE
+					SET msgError = 'El codigo de impuesto no existe, no se puede actualizar';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El codigo de tipo de producto, no se puede actualizar';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_PRODUCTO WHERE Cod_Tipo_Producto = pCodTipProdu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Impuesto = pCodImpu) = 0) THEN
+					DELETE FROM TIPO_PRODUCTO
+					WHERE Cod_Tipo_Producto = pCodTipProdu;
+				ELSE
+					SET msgError = 'No se puede eliminar, tipo producto asociado a producto';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el tipo de producto no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El tipo de producto es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
