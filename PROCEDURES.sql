@@ -6,7 +6,6 @@ DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE TIEMPO QUE LLEVA TRABAJANDO UN EMPLEADO ------------------------------------------------------------*/
 CREATE PROCEDURE TIEMPO_LABORAL_EMPLEADO (pCodEmpleado INT)
 BEGIN
-#FUNCTION supermercado.GETDATE does not exist	
     DECLARE Fecha_Actual DATE;
     SET Fecha_Actual = NOW();
     SELECT DATEDIFF(Fecha_Actual, EMPLEADO.Fecha_Contratado)
@@ -41,8 +40,6 @@ END
 
 DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE PRODUCTOS EN UNA SUCURSAL ------------------------------------------------------------*/
-#¿productos totales o de uno en específico?
-#arreglar el inner join
 CREATE PROCEDURE PRODUCTOS_SUCURSAL(pCodSucursal INT)
 BEGIN
     SELECT SUM(BODEGA_SUCURSAL_PRODUCTO.Cantidad_Actual)
