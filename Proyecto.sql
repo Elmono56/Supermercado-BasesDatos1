@@ -1010,26 +1010,64 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_TELEFPERSO(pIdentPers INT, pNumTel VARCHAR(15), pContTelef INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO TELEF_PERSO(Identificacion_Per, Num_Telef)
-		VALUES(pIdentPers, pNumTel);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Identificacion_Per, Num_Telef, Contador_Telef
-		FROM TELEF_PERSO
-		WHERE Identificacion_Per = pIdentPers;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE TELEF_PERSO
-		SET Num_Telef = IFNULL(pNumTel,Num_Telef)
-		WHERE Identificacion_Per = pIdentPers AND Contador_Telef=pContTelef;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pIdentPers IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM TELEF_PERSO
-		WHERE Identificacion_Per = pIdentPers;
+		IF (pOperacion = 'CREATE') THEN
+			IF (pNumTel != '') THEN
+				INSERT INTO TELEF_PERSO(Identificacion_Per, Num_Telef)
+				VALUES(pIdentPers, pNumTel);
+			ELSE
+				SET msgError = 'El numero de telefono está vacío';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
+				SELECT Identificacion_Per, Num_Telef, Contador_Telef
+				FROM TELEF_PERSO
+				WHERE Identificacion_Per = pIdentPers;
+			ELSE
+				SET msgError = 'La persona no tiene numeros de telefono asociados';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
+				IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Contador_Telef = pContTelef) > 0) THEN
+					UPDATE TELEF_PERSO
+					SET Num_Telef = IFNULL(pNumTel, Num_Telef)
+					WHERE Identificacion_Per = pIdentPers AND Contador_Telef = pContTelef;
+				ELSE
+					SET msgError = 'El ID del telefono no existe, imposible actualizar datos';
+					SELECT msgError;
+				END IF;
+            ELSE
+				SET msgError = 'La persona no tiene numeros de telefono asociados';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Identificacion_Per = pIdentPers) > 0) THEN
+				IF ((SELECT COUNT(*) FROM TELEF_PERSO WHERE Contador_Telef = pContTelef) = 0) THEN
+					DELETE FROM TELEF_PERSO
+					WHERE Identificacion_Per = pIdentPers AND Contador_Telef = pContTelef;
+				ELSE
+					SET msgError = 'No se puede eliminar, el ID del telefono no existe';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'La persona no tiene numeros de telefono asociados';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El numero de cedula es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
