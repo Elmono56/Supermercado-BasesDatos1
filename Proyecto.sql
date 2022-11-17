@@ -137,7 +137,7 @@ CREATE TABLE `TELEF_PERSO` (
 );
 
 CREATE TABLE `BODEGA_SUCURSAL_PRODUCTO` (
-  `Cod_Bode_Sucu_Produ` INT AUTO_INCREMENT NOT NULL,
+  `Cod_Bode_Sucu_Produ` INT NOT NULL AUTO_INCREMENT,
   `Cod_Producto` INT NOT NULL,
   `Cod_Sucursal` INT NOT NULL,
   `Precio_Compra` FLOAT NOT NULL,
@@ -1662,29 +1662,103 @@ END;
 /*------------------------------------------------------------ BODEGA_SUCURSAL_PRODUCTO ------------------------------------------------------------*/
 delimiter //
 CREATE PROCEDURE CRUD_BODESUCUPRODU(pCodBodega INT, pCodProdu INT, pCodSucursal INT, 
-										pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra INT, pCantCompra INT, pFechaProduc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
+										pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra INT, pCantActual INT, pFechaProducc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
 BEGIN
+DECLARE msgError VARCHAR(70) DEFAULT '';
+    
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO BODEGA_SUCURSAL_PRODUCTO(Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Actual, Fecha_Produccion, Fecha_Vencimiento)
-        VALUES(pCodBodega, pCodProdu, pCodSucursal, pPrecioCompra, pCodProveedor, pFechaCompra, pCantCompra, pFechaProduc, pFechaVenci);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Actual, Fecha_Produccion, Fecha_Vencimiento
-		FROM BODEGA_SUCURSAL_PRODUCTO
-		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE BODEGA_SUCURSAL_PRODUCTO
-		SET Cod_Producto=IFNULL(pCodProdu,Cod_Producto), Cod_Sucursal=IFNULL(pCodSucursal,Cod_Sucursal), Precio_Compra=IFNULL(pPrecioCompra,Precio_Compra), Cod_Proveedor=IFNULL(pCodProveedor,Cod_Proveedor), 
-				Fecha_Compra=IFNULL(pFechaCompra,Fecha_Compra), Cantidad_Actual=IFNULL(pCantCompra,Cantidad_Actual), Fecha_Produccion=IFNULL(pFechaProduc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
-		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
+		IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) > 0) THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM PROVEEDOR WHERE Cod_Proveedor = pCodProveedor) > 0) THEN
+					IF (pPrecioCompra IS NOT NULL AND pPrecioCompra >= 0) THEN
+						IF (pCantActual IS NOT NULL AND pCantActual >= 0) THEN
+							IF (pFechaCompra IS NOT NULL) THEN
+								IF (pFechaProducc IS NOT NULL) THEN
+									IF (pFechaVenci IS NOT NULL) THEN
+										INSERT INTO BODEGA_SUCURSAL_PRODUCTO(Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Actual, Fecha_Produccion, Fecha_Vencimiento)
+										VALUES(pCodProdu, pCodSucursal, pPrecioCompra, pCodProveedor, pFechaCompra, pCantActual, pFechaProduc, pFechaVenci);
+									ELSE
+										SET msgError = 'La fecha de vencimiento es inválida';
+										SELECT msgError;
+									END IF;
+								ELSE
+									SET msgError = 'La fecha de produccion es inválida';
+									SELECT msgError;
+								END IF;
+							ELSE
+								SET msgError = 'La fecha de compra es inválida';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'La cantidad comprada es inválida';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'El precio de la compra es inválido';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El código de proveedor no existe';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El código de producto no existe';
+				SELECT msgError;
+			END IF;
+		ELSE
+			SET msgError = 'El código de sucursal no existe';
+			SELECT msgError;
+		END IF;
 	END IF;
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM BODEGA_SUCURSAL_PRODUCTO
-		WHERE Cod_Bode_Sucu_Produ = pCodBodega;
+	IF (pCodBodega IS NOT NULL) THEN
+    
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = pCodBodega) > 0) THEN
+				SELECT Cod_Bode_Sucu_Produ, Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Actual, Fecha_Produccion, Fecha_Vencimiento
+				FROM BODEGA_SUCURSAL_PRODUCTO
+				WHERE Cod_Bode_Sucu_Produ = pCodBodega;
+			ELSE
+				SET msgError = 'El codigo de bodega de sucursal no existe,imposible hacer la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = pCodBodega) > 0) THEN
+				IF (pPrecioCompra IS NOT NULL AND pPrecioCompra >= 0) THEN
+					IF (pCantActual IS NOT NULL AND pCantActual >= 0) THEN
+						UPDATE BODEGA_SUCURSAL_PRODUCTO
+						SET Precio_Compra=IFNULL(pPrecioCompra,Precio_Compra),Fecha_Compra=IFNULL(pFechaCompra,Fecha_Compra), Cantidad_Actual=IFNULL(pCantActual,Cantidad_Actual), Fecha_Produccion=IFNULL(pFechaProduc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
+						WHERE Cod_Bode_Sucu_Produ = pCodBodega;
+					ELSE
+						SET msgError = 'La cantidad  actual es inválida, no se puede actualizar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El precio de compra es inválido, no se puede actualizar';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El código de bodega de sucursal no existe, no se puede actualizar';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = pCodBodega) > 0) THEN
+				DELETE FROM BODEGA_SUCURSAL_PRODUCTO
+				WHERE Cod_Bode_Sucu_Produ = pCodBodega;
+            ELSE
+				SET msgError = 'No se puede eliminar, el código de bodega de sucursal no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+    #el codigo de bodega no es solicitado al crear la bodega, así se evita el mensaje
+	ELSEIF ((pCodBodega IS NOT NULL) AND (pOperacion!='CREATE')) THEN
+		SET msgError = 'El código de bodega de sucursal está vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
