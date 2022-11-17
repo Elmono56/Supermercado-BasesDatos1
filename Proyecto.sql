@@ -2801,6 +2801,24 @@ BEGIN
 END
 //
 
+DELIMITER //
+/*---------------------------------------------------- GANANCIA DE UN PRODUCTO -------------------------------------------------------*/
+CREATE FUNCTION GANANCIAS_PRODUCTO (COD_PRODUCTO INT) RETURNS FLOAT
+BEGIN
+	DECLARE GANANCIA FLOAT;
+    SELECT
+		TOTAL_PAGAR_PRODUCTO(COD_PRODUCTO) - BODEGA_PROVEEDOR_PRODUCTO.PRECIO_VENTA
+	INTO
+		GANANCIA
+	FROM
+		BODEGA_PROVEEDOR_PRODUCTO
+	WHERE
+		COD_PRODUCTO = BODEGA_PROVEEDOR_PRODUCTO.COD_PRODUCTO;
+	RETURN GANANCIA;
+END
+//
+
+
 DELIMITER ;
 ;
 /*---------------------------------------------------------------------------------------------------------------------
