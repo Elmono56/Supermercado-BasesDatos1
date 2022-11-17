@@ -1122,3 +1122,29 @@ BEGIN
 	END IF;
 END;
 //
+
+delimiter //
+CREATE PROCEDURE CRUD_PRODUCTO_EXPIRADO(pCodProdu INT, pNombProdu VARCHAR(50), pOperacion VARCHAR(10)) 
+BEGIN
+	IF (pOperacion = 'CREATE') THEN
+		INSERT INTO PRODUCTO_EXPIRADO (Cod_Producto,Nombre_Producto) 
+        VALUES (pCodProdu,pNombProdu);
+    END IF;
+    
+    IF (pOperacion = 'READ') THEN
+		SELECT *
+        FROM PRODUCTO_EXPIRADO
+        WHERE pCodProdu = PRODUCTO_EXPIRADO.Cod_Producto;
+    END IF;
+    /*
+    IF (pOperacion = 'UPDATE')  THEN
+		UPDATE PRODUCTO_EXPIRADO
+        SET 
+    END IF;
+    */
+    IF (pOperacion = 'DELETE') THEN
+		DELETE FROM PRODUCTO_EXPIRADO
+        WHERE pCodProdu = PRODUCTO_EXPIRADO.Cod_Producto;
+    END IF;
+END
+//
