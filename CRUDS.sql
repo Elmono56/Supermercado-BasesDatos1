@@ -499,26 +499,64 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_TIPUSUARIO(pCodTipUsu INT, pDescTipUsu VARCHAR(30), pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO TIPO_USUARIO(Cod_Tipo_Usuario, Descrip_TipUsu)
-		VALUES(pCodTipUsu, pDescTipUsu);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Tipo_Usuario, Descrip_TipUsu
-		FROM TIPO_USUARIO
-		WHERE Cod_Tipo_Usuario = pCodTipUsu;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE TIPO_USUARIO
-		SET  Descrip_TipUsu=IFNULL(pDescTipUsu,Descrip_TipUsu)
-		WHERE Cod_Tipo_Usuario = pCodTipUsu;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodTipUsu IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM TIPO_USUARIO
-		WHERE Cod_Tipo_Usuario = pCodTipUsu;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) = 0) THEN
+				IF (pDescTipUsu != '') THEN
+					INSERT INTO TIPO_USUARIO(Cod_Tipo_Usuario, Descrip_TipUsu)
+					VALUES(pCodTipUsu, pDescTipUsu);
+				ELSE
+					SET msgError = 'La descripción del tipo de usuario está vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de tipo de usuario ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+				SELECT Cod_Tipo_Usuario, Descrip_TipUsu
+				FROM TIPO_USUARIO
+				WHERE Cod_Tipo_Usuario = pCodTipUsu;
+			ELSE
+				SET msgError = 'El codigo de tipo usuario no existe, imposible realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+				UPDATE TIPO_USUARIO
+				SET Descrip_TipUsu = IFNULL( pDescTipUsu, Descrip_TipUsu)
+				WHERE Cod_Tipo_Usuario = pCodTipUsu;
+			ELSE
+				SET msgError = 'El codigo de tipo usuario no existe, imposible realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) = 0) THEN
+					DELETE FROM TIPO_USUARIO
+					WHERE Cod_Tipo_Usuario = pCodTipUsu;
+				ELSE
+					SET msgError = 'No se puede eliminar, tipo de usuario asociado a usuario';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de tipo de usuario no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de tipo de usuario es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
