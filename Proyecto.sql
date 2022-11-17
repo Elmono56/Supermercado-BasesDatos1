@@ -1429,26 +1429,104 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_PRODUCTO(pCodProdu INT,  pNombProdu VARCHAR(50), pCodTipProdu INT, pCantMin INT, pCantMax INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PRODUCTO(Cod_Producto, Nombre_Producto, Cod_Tipo_Producto, Cant_Minima, Cant_Maxima)
-		VALUES(pCodProdu, pNombProdu, pCodTipProdu, pCantMin, pCantMax);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Producto, Nombre_Producto, Cod_Tipo_Producto, Cant_Minima, Cant_Maxima
-		FROM PRODUCTO
-		WHERE Cod_Producto = pCodProdu;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PRODUCTO
-		SET  Nombre_Producto=IFNULL(pNombProdu,Nombre_Producto), Cod_Tipo_Producto=IFNULL(pCodTipProdu,Cod_Tipo_Producto), Cant_Minima=IFNULL(pCantMin,Cant_Minima), Cant_Maxima=IFNULL(pCantMax,Cant_Maxima)
-		WHERE Cod_Producto = pCodProdu;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodProdu IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PRODUCTO
-		WHERE Cod_Producto = pCodProdu;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) = 0) THEN
+				IF (pNombProdu != '' AND pNombProdu IS NOT NULL) THEN
+					IF ((SELECT COUNT(*) FROM TIPO_PRODUCTO WHERE Cod_Tipo_Producto = pCodTipProdu) > 0) THEN
+						IF (pCantMin IS NOT NULL AND pCantMin>=0) THEN
+							IF (pCantMax IS NOT NULL AND pCantMax>pCantMin) THEN
+								INSERT INTO PRODUCTO(Cod_Producto, Nombre_Producto, Cod_Tipo_Producto, Cant_Minima, Cant_Maxima)
+								VALUES(pCodProdu, pNombProdu, pCodTipProdu, pCantMin, pCantMax);
+							ELSE
+								SET msgError = 'La cantidad maxima debe ser mayor a la minima';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'La cantidad minima debe ser >= a 0';
+							SELECT msgError;
+						END IF;
+                    ELSE
+						SET msgError = 'El codigo de tipo de producto no existe';
+						SELECT msgError;
+					END IF;
+                ELSE
+					SET msgError = 'El nombre de producto ingresado no es válido';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de producto ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+				SELECT Cod_Producto, Nombre_Producto, Cod_Tipo_Producto, Cant_Minima, Cant_Maxima
+				FROM PRODUCTO
+				WHERE Cod_Producto = pCodProdu;
+			ELSE
+				SET msgError = 'El codigo producto no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+					IF ((SELECT COUNT(*) FROM TIPO_PRODUCTO WHERE Cod_Tipo_Producto = pCodTipProdu) > 0) THEN
+						IF (pCantMin IS NOT NULL AND pCantMin>=0) THEN
+							IF (pCantMax IS NOT NULL AND pCantMax>pCantMin) THEN
+								UPDATE PRODUCTO
+								SET Nombre_Producto=IFNULL(pNombProdu,Nombre_Producto), Cod_Tipo_Producto=IFNULL(pCodTipProdu,Cod_Tipo_Producto), Cant_Minima=IFNULL(pCantMin,Cant_Minima), Cant_Maxima=IFNULL(pCantMax,Cant_Maxima)
+								WHERE Cod_Producto = pCodProdu;
+							ELSE
+								SET msgError = 'La cantidad maxima es invalida, no se puede actualizar datos';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'La cantidad minima es invalida, no se puede actualizar datos';
+							SELECT msgError;
+						END IF;
+				ELSE
+					SET msgError = 'El codigo de tipo de producto no existe, no se puede actualizar datos';
+					SELECT msgError;
+				END IF;
+            ELSE
+				SET msgError = 'El codigo de producto no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+				IF ((SELECT COUNT(*) FROM BODEGA_PROVEEDOR_PRODUCTO WHERE Cod_Producto = pCodProdu) = 0) THEN
+					IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Producto = pCodProdu) = 0) THEN
+						IF ((SELECT COUNT(*) FROM PEDIDO_PRODUCTO WHERE Cod_Producto = pCodProdu) = 0) THEN
+							DELETE FROM PRODUCTO
+							WHERE Cod_Producto = pCodProdu;
+						ELSE
+							SET msgError = 'No se puede eliminar, proveedor asociado a pedido de producto';
+							SELECT msgError;
+						END IF;
+                    ELSE
+						SET msgError = 'No se puede eliminar, producto asociado a bodega de sucursal';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, producto asociado a bodega de proveedor';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de producto no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de producto es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
