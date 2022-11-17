@@ -2075,28 +2075,91 @@ END;
 
 /*------------------------------------------------------------ PEDIDO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_PEDIDO(pNumPedido INT, pFecPedido DATE, pCodCliente INT, ID_EstadoP INT, pEnvio BOOL, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_PEDIDO(pNumPedido INT, pFechaPedido DATE, pCodCliente INT, pIDEstadoP INT, pEnvio BOOL, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PEDIDO(Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio)
-		VALUES(pNumPedido, pFecPedido, pCodCliente, ID_EstadoP, pEnvio);
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pNumPedido IS NOT NULL) THEN
+        
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) = 0) THEN
+				IF (pFechaPedido IS NOT NULL) THEN
+					IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0) THEN
+						IF ((SELECT COUNT(*) FROM ESTADO_PEDIDO WHERE ID_EstadoP = pIDEstadoP) > 0) THEN
+							IF (pEnvio IS NOT NULL) THEN
+								INSERT INTO PEDIDO(Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio)
+								VALUES(pNumPedido, pFechaPedido, pCodCliente, pIDEstadoP, pEnvio);
+                            ELSE
+								SET msgError = 'El dato del envío es nulo';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'El codigo del estado del pedido no existe';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'El codigo de cliente no existe';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'La fecha de la factura es inválida';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El numero de pedido ya existe';
+				SELECT msgError;
+			END IF;
+		END IF;
 
-	IF (pOperacion = 'READ') THEN
-		SELECT Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio
-		FROM PEDIDO
-		WHERE Num_Pedido = pNumPedido;
-  END IF;
-  
- IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PEDIDO
-		SET Envio = IFNULL(pEnvio,Envio)
-		WHERE Num_Pedido = pNumPedido;
-	END IF;
-  
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PEDIDO
-		WHERE Num_Pedido = pNumPedido;
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+				SELECT Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio
+				FROM PEDIDO
+				WHERE Num_Pedido = pNumPedido;
+			ELSE
+				SET msgError = 'El numero de pedido no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+				IF ((SELECT COUNT(*) FROM ESTADO_PEDIDO WHERE ID_EstadoP = pIDEstadoP) > 0) THEN
+					UPDATE PEDIDO
+					SET Envio = IFNULL(pEnvio,Envio), ID_EstadoP = IFNULL(pIDEstadoP,ID_EstadoP)
+					WHERE Num_Pedido = pNumPedido;
+				ELSE
+					SET msgError = 'El codigo de estado de pedido no existe, no se puede actualizar datos';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El numero de pedido no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+		
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+				IF ((SELECT COUNT(*) FROM PEDIDO_PRODUCTO WHERE Num_Pedido = pNumPedido) > 0) THEN
+					IF ((SELECT COUNT(*) FROM FACTURA WHERE Num_Pedido = pNumPedido) > 0) THEN
+							DELETE FROM PEDIDO
+							WHERE Num_Pedido = pNumPedido;
+					ELSE
+						SET msgError = 'No se puede eliminar, el numero de pedido esta asociado a una factura';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, el pedido esta asociado a una orden de productos';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el numero de pedido no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+            
+	ELSE
+		SET msgError = 'El numero de pedido es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
