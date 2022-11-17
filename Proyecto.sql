@@ -805,26 +805,104 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_EMPLEADO(pCodEmpleado INT, pFechaContr DATE, pHorasLab FLOAT, pCodSucursal INT, pCodPuLaboral INT, pIdentPers INT , pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO EMPLEADO(Cod_Empleado, Fecha_Contratado, Horas_Laborales, Cod_Sucursal, Cod_Puesto_Laboral, Identificacion_Per)
-		VALUES(pCodEmpleado,pFechaContr, pHorasLab, pCodSucursal, pCodPuLaboral, pIdentPers);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Empleado, Fecha_Contratado, Horas_Laborales, Cod_Sucursal, Cod_Puesto_Laboral, Identificacion_Per
-		FROM EMPLEADO
-		WHERE Cod_Empleado = pCodEmpleado;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE EMPLEADO
-		SET  Horas_Laborales=IFNULL(pHorasLab, Horas_Laborales), Cod_Sucursal=IFNULL(pCodSucursal,Cod_Sucursal), Cod_Puesto_Laboral=IFNULL(pCodPuLaboral,Cod_Puesto_Laboral)
-		WHERE Cod_Empleado = pCodEmpleado;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodEmpleado IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM EMPLEADO
-		WHERE Cod_Empleado = pCodEmpleado;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Empleado = pCodEmpleado) = 0) THEN
+				IF (pFechaContr IS NOT NULL) THEN
+					IF (pHorasLab IS NOT NULL AND pHorasLab>=0) THEN
+						IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) > 0) THEN
+							IF ((SELECT COUNT(*) FROM PUESTO_LABORAL WHERE Cod_Puesto_Laboral = pCodPuLaboral) > 0) THEN
+								IF ((SELECT COUNT(*) FROM PERSONA WHERE Identificacion_Per = pIdentPers) > 0) THEN
+									INSERT INTO EMPLEADO(Cod_Empleado, Fecha_Contratado, Horas_Laborales, Cod_Sucursal, Cod_Puesto_Laboral, Identificacion_Per)
+									VALUES(pCodEmpleado,pFechaContr, pHorasLab, pCodSucursal, pCodPuLaboral, pIdentPers);
+								ELSE
+									SET msgError = 'La identificacion personal no existe';
+									SELECT msgError;
+								END IF;
+							ELSE
+								SET msgError = 'El codigo de puesto laboral no existe';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'El codigo de sucursal no existe';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'Las horas laborales ingresadas no son válidas';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'La fecha de contratacion ingresada es vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de empleado ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Empleado = pCodEmpleado) > 0) THEN
+				SELECT Cod_Empleado, Fecha_Contratado, Horas_Laborales, Cod_Sucursal, Cod_Puesto_Laboral, Identificacion_Per
+				FROM EMPLEADO
+				WHERE Cod_Empleado = pCodEmpleado;
+			ELSE
+				SET msgError = 'El codigo de empleado no existe, no se puede hacer la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Empleado = pCodEmpleado) > 0) THEN
+				IF (pHorasLab IS NOT NULL AND pHorasLab>=0) THEN
+					IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) > 0) THEN
+						IF ((SELECT COUNT(*) FROM PUESTO_LABORAL WHERE Cod_Puesto_Laboral = pCodPuLaboral) > 0) THEN
+							UPDATE EMPLEADO
+							SET Horas_Laborales=IFNULL(pHorasLab, Horas_Laborales), Cod_Sucursal=IFNULL(pCodSucursal,Cod_Sucursal), Cod_Puesto_Laboral=IFNULL(pCodPuLaboral,Cod_Puesto_Laboral)
+							WHERE Cod_Empleado = pCodEmpleado;
+						ELSE
+							SET msgError = 'El codigo de puesto laboral no existe, no se puede actualizar';
+							SELECT msgError;
+						END IF;
+                    ELSE
+						SET msgError = 'El codigo de sucursal no existe, no se puede actualizar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'Las horas laborales ingresadas no son válidas, no se puede actualizar';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El codigo de empleado no existe, no se puede actualizar';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Empleado = pCodEmpleado) > 0) THEN
+				IF ((SELECT COUNT(*) FROM FACTURA WHERE Cod_Empleado = pCodEmpleado) = 0) THEN
+					IF ((SELECT COUNT(*) FROM BONOS_EMPLEADO WHERE Cod_Empleado = pCodEmpleado) = 0) THEN
+						DELETE FROM EMPLEADO
+						WHERE Cod_Empleado = pCodEmpleado;
+					ELSE
+						SET msgError = 'No se puede eliminar, empleado asociada a bono de empleado';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, empleado asociada a factura';
+					SELECT msgError;
+				END IF;
+            ELSE
+				SET msgError = 'No se puede eliminar, codigo de empleado no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+	ELSE
+		SET msgError = 'El codigo de empleado está vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -2198,6 +2276,7 @@ call CRUD_PERSONA(118440792,'Jose Pablo','Hidalgo Navarro',"2002-06-05",'Barrio 
 call CRUD_PERSONA(111111111,'Maria del Mar','Fernandez Vega',"1998-04-15",'Barrio Bloque K',2,11,'CREATE');
 call CRUD_PERSONA(122222222,'Kevin','Nuñez Cruz',"1995-01-21",'Barrio Escalante',1,11,'CREATE');
 call CRUD_PERSONA(133333333,'Estefanny','Gamboa Jimenez',"2003-12-01",'Curridabat',2,11,'CREATE');
+call CRUD_PERSONA(144444444,'Mario','Segura Mendez',"2001-01-01",'La Carpio',1,13,'CREATE');
 call CRUD_PERSONA(155555555,'Javier Ernaldo','Benabidez Cruz',"2001-10-11",'Daniel Flores',1,12,'CREATE');
 call CRUD_PERSONA(166666666,'Alonso','Zegheline Ovierira',"2001-07-15",'Zapote',1,11,'CREATE');
 call CRUD_PERSONA(177777777,'Fabian Josué','Solano Rojas',"1993-08-17",'Daniel Flores',1,12,'CREATE');
