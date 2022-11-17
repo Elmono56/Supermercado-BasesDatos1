@@ -594,24 +594,78 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_CLIENTE(pCodCliente INT, pCodUsu INT, pOperacion VARCHAR(10))
 BEGIN
-
-
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO CLIENTE(Cod_Cliente, Cod_Usuario)
-		VALUES(pCodCliente, pCodUsu);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Cliente, Cod_Usuario
-		FROM CLIENTE
-		WHERE Cod_Cliente = pCodCliente;
-  END IF;
-	
-    #no tiene nada para actualizar
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodCliente IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM CLIENTE
-		WHERE Cod_Cliente = pCodCliente;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) = 0) THEN
+				IF ((SELECT COUNT(*) FROM USUARIO WHERE Cod_Usuario = pCodUsu) > 0) THEN
+					INSERT INTO CLIENTE(Cod_Cliente, Cod_Usuario)
+					VALUES(pCodCliente, pCodUsu);
+				ELSE
+					SET msgError = 'El codigo de usuario no existe';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de cliente ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0) THEN
+				SELECT Cod_Cliente, Cod_Usuario
+				FROM CLIENTE
+				WHERE Cod_Cliente = pCodCliente;
+			ELSE
+				SET msgError = 'El codigo de cliente, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			SET msgError = 'No está permitido actualizar datos';
+			SELECT msgError;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0) THEN
+				IF ((SELECT COUNT(*) FROM CRIPTOCARTERA WHERE Cod_Cliente = pCodCliente) = 0) THEN
+					IF ((SELECT COUNT(*) FROM TARJETA_CREDITO WHERE Cod_Cliente = pCodCliente) = 0) THEN
+						IF ((SELECT COUNT(*) FROM CHEQUE WHERE Cod_Cliente = pCodCliente) = 0) THEN
+							IF ((SELECT COUNT(*) FROM PEDIDO WHERE Cod_Cliente = pCodCliente) = 0) THEN
+								IF ((SELECT COUNT(*) FROM FACTURA WHERE Cod_Cliente = pCodCliente) = 0) THEN
+									DELETE FROM CLIENTE
+									WHERE Cod_Cliente = pCodCliente;
+                                ELSE
+									SET msgError = 'No se puede eliminar, cliente asociado a factura';
+									SELECT msgError;
+								END IF;
+							ELSE
+								SET msgError = 'No se puede eliminar, cliente asociado a pedido';
+								SELECT msgError;
+							END IF;
+                        ELSE
+							SET msgError = 'No se puede eliminar, cliente asociado a cheque';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'No se puede eliminar, cliente asociado a tarjeta de credito';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, cliente asociado a criptocartera';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de cliente no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'Error: el codigo de cliente es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
