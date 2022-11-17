@@ -241,9 +241,10 @@ CREATE TABLE `BONOS_EMPLEADO` (
 CREATE TABLE `PRODUCTO_EXPIRADO` (
 	`Cod_Producto_Exp` INT NOT NULL AUTO_INCREMENT,
     `Cod_Producto` INT NOT NULL,
-    `Nombre_Producto` VARCHAR(50) NOT NULL,
-    `Fecha_Expirado` DATE NOT NULL,
-    PRIMARY KEY (`Cod_Producto_Exp`)
+    `Cantidad_Productos` INT NOT NULL,
+    `Cod_Bode_Sucu_Produ` INT NOT NULL,
+    PRIMARY KEY (`Cod_Producto_Exp`),
+    FOREIGN KEY (`Cod_Bode_Sucu_Produ`) REFERENCES `BODEGA_SUCURSAL_PRODUCTO`(`Cod_Bode_Sucu_Produ`)
 );
 
 
@@ -2403,30 +2404,77 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 END;
 //
 
+/*------------------------------------------------------------ PRODUCTO_EXPIRADO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_PRODUCTO_EXPIRADO(pCodProdu INT, pNombProdu VARCHAR(50), pOperacion VARCHAR(10)) 
+CREATE PROCEDURE CRUD_PRODUCTO_EXPIRADO(pCodProduExp INT, pCodProdu INT, pCantProExp INT, pBodeSucuProdu INT, pOperacion VARCHAR(10)) 
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PRODUCTO_EXPIRADO (Cod_Producto,Nombre_Producto) 
-        VALUES (pCodProdu,pNombProdu);
-    END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
     
-    IF (pOperacion = 'READ') THEN
-		SELECT *
-        FROM PRODUCTO_EXPIRADO
-        WHERE pCodProdu = PRODUCTO_EXPIRADO.Cod_Producto;
-    END IF;
-    /*
-    IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PRODUCTO_EXPIRADO
-        SET 
-    END IF;
-    */
-    IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PRODUCTO_EXPIRADO
-        WHERE pCodProdu = PRODUCTO_EXPIRADO.Cod_Producto;
-    END IF;
-END
+	IF (pOperacion = 'CREATE') THEN
+		IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) = 0) THEN
+				IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = pBodeSucuProdu) > 0) THEN
+					IF (pCantProExp IS NOT NULL AND pCantProExp>=0) THEN
+							INSERT INTO PRODUCTO_EXPIRADO (Cod_Producto, Cantidad_Productos, Cod_Bode_Sucu_Produ) 
+							VALUES (pCodProdu, pCantProExp, pBodeSucuProdu);
+					ELSE
+						SET msgError = 'La cantidad de productos expirados no es válida';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El código de bodega sucursal no existe';
+					SELECT msgError;
+				END IF;
+		ELSE
+			SET msgError = 'El código de producto no existe';
+			SELECT msgError;
+		END IF;
+	END IF;
+    
+	IF (pCodProdu IS NOT NULL) THEN
+    
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO_EXPIRADO WHERE Cod_Producto_Exp = pCodProduExp) > 0) THEN
+				SELECT Cod_Producto, Cantidad_Productos, Cod_Bode_Sucu_Produ
+				FROM PRODUCTO_EXPIRADO
+				WHERE Cod_Producto_Exp = pCodProduExp;
+			ELSE
+				SET msgError = 'El codigo producto expirado no existe, imposible realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO_EXPIRADO WHERE Cod_Producto_Exp = pCodProduExp) > 0) THEN
+				IF (pCantProExp IS NOT NULL AND pCantProExp>=0) THEN
+						UPDATE PRODUCTO_EXPIRADO
+						SET Cantidad_Productos=IFNULL(pCantProExp,Cantidad_Productos)
+						WHERE Cod_Producto_Exp = pCodProduExp;
+					ELSE
+						SET msgError = 'Cantidad de productos expirados es inválida,imposible actualizar datos';
+						SELECT msgError;
+					END IF;
+            ELSE
+				SET msgError = 'El codigo de producto expirado no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO_EXPIRADO WHERE Cod_Producto_Exp = pCodProduExp) > 0) THEN
+				DELETE FROM PRODUCTO_EXPIRADO
+				WHERE Cod_Producto_Exp = pCodProduExp;
+			 ELSE
+				SET msgError = 'El codigo de producto expirado no existe, no se puede eliminar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+    #el codigo de producto expirado no es solicitado al crear el registro, así se evita el mensaje
+	ELSEIF ((pCodEmpleado IS NOT NULL) AND (pOperacion!='CREATE')) THEN
+		SET msgError = 'El codigo de producto expirado es vacío';
+        SELECT msgError;
+	END IF;
+END;
 //
 
 /*-----------------------------------------------------------------------------------------------------------------------------
