@@ -1430,26 +1430,64 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_ESTADOP(pIDEstadoP INT,  pDescripEstP VARCHAR(15), pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO ESTADO_PEDIDO(ID_EstadoP, Descripcion_EstadoP)
-		VALUES(pIDEstadoP, pDescripEstP);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT ID_EstadoP, Descripcion_EstadoP
-		FROM ESTADO_PEDIDO
-		WHERE ID_EstadoP = pIDEstadoP;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE ESTADO_PEDIDO
-		SET  ID_EstadoP=IFNULL(pDescripEstP,ID_EstadoP)
-		WHERE ID_EstadoP = pIDEstadoP;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pIDEstadoP IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM ESTADO_PEDIDO
-		WHERE ID_EstadoP = pIDEstadoP;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM ESTADO_PEDIDO WHERE ID_EstadoP = pIDEstadoP) = 0) THEN
+				IF (pDescripEstP != '' AND pDescripEstP IS NOT NULL) THEN
+					INSERT INTO ESTADO_PEDIDO(ID_EstadoP, Descripcion_EstadoP)
+					VALUES(pIDEstadoP, pDescripEstP);
+				ELSE
+					SET msgError = 'La descripción del estado de pedido está vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El ID de estado de pedido ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM ESTADO_PEDIDO WHERE ID_EstadoP = pIDEstadoP) > 0) THEN
+				SELECT ID_EstadoP, Descripcion_EstadoP
+				FROM ESTADO_PEDIDO
+				WHERE ID_EstadoP = pIDEstadoP;
+			ELSE
+				SET msgError = 'El ID de estado de pedido no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM ESTADO_PEDIDO WHERE ID_EstadoP = pIDEstadoP) > 0) THEN
+				UPDATE ESTADO_PEDIDO
+				SET Descripcion_EstadoP = IFNULL(pDescripEstP, Descripcion_EstadoP)
+				WHERE ID_EstadoP = pIDEstadoP;
+			ELSE
+				SET msgError = 'El ID de estado de pedido no existe, no se pudo actualizar los datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM ESTADO_PEDIDO WHERE ID_EstadoP = pIDEstadoP) > 0) THEN
+				IF ((SELECT COUNT(*) FROM PEDIDO WHERE ID_EstadoP = pIDEstadoP) = 0) THEN
+					DELETE FROM ESTADO_PEDIDO
+					WHERE ID_EstadoP = pIDEstadoP;
+				ELSE
+					SET msgError = 'No se puede eliminar, estado de pedido asociado a pedido';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el estado de pedido no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+	ELSE
+		SET msgError = 'El ID de estado de pedido está vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
