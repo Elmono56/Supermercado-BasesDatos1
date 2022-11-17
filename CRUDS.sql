@@ -1499,8 +1499,13 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 		IF (pOperacion = 'DELETE') THEN
 			IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = pCodBodega) > 0) THEN
 				IF ((SELECT COUNT(*) FROM PRODUCTO_EXPIRADO WHERE Cod_Bode_Sucu_Produ = pCodBodega) = 0) THEN
-					DELETE FROM BODEGA_SUCURSAL_PRODUCTO
-					WHERE Cod_Bode_Sucu_Produ = pCodBodega;
+					IF ((SELECT COUNT(*) FROM PEDIDO WHERE Cod_Bode_Sucu_Produ = pCodBodega) = 0) THEN
+						DELETE FROM BODEGA_SUCURSAL_PRODUCTO
+						WHERE Cod_Bode_Sucu_Produ = pCodBodega;
+					ELSE
+						SET msgError = 'Imposible eliminar, código de bodega está asociado a pedido';
+						SELECT msgError;
+					END IF;
 				ELSE
 					SET msgError = 'Imposible eliminar, código de bodega está asociado a producto expirado';
 					SELECT msgError;
@@ -1969,7 +1974,7 @@ END;
 
 /*------------------------------------------------------------ PEDIDO ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_PEDIDO(pNumPedido INT, pFechaPedido DATE, pCodCliente INT, pIDEstadoP INT, pEnvio BOOL, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_PEDIDO(pNumPedido INT, pFechaPedido DATE, pCodCliente INT, pIDEstadoP INT, pEnvio BOOL, pCodSucursal INT, pOperacion VARCHAR(10))
 BEGIN
 DECLARE msgError VARCHAR(70) DEFAULT '';
 	IF (pNumPedido IS NOT NULL) THEN
@@ -1980,8 +1985,13 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 					IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0) THEN
 						IF ((SELECT COUNT(*) FROM ESTADO_PEDIDO WHERE ID_EstadoP = pIDEstadoP) > 0) THEN
 							IF (pEnvio IS NOT NULL) THEN
-								INSERT INTO PEDIDO(Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio)
-								VALUES(pNumPedido, pFechaPedido, pCodCliente, pIDEstadoP, pEnvio);
+								IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) > 0) THEN
+									INSERT INTO PEDIDO(Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio,Cod_Sucursal)
+									VALUES(pNumPedido, pFechaPedido, pCodCliente, pIDEstadoP, pEnvio, pCodSucursal);
+								ELSE
+									SET msgError = 'El codigo del sucursal no existe';
+									SELECT msgError;
+								END IF;
                             ELSE
 								SET msgError = 'El dato del envío es nulo';
 								SELECT msgError;
@@ -2006,7 +2016,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 
 		IF (pOperacion = 'READ') THEN
 			IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
-				SELECT Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio
+				SELECT Num_Pedido, Fecha_Pedido, Cod_Cliente, ID_EstadoP, Envio, Cod_Bode_Sucu_Produ
 				FROM PEDIDO
 				WHERE Num_Pedido = pNumPedido;
 			ELSE
@@ -2063,6 +2073,7 @@ delimiter //
 CREATE PROCEDURE CRUD_PEDIDOxPRODU(pNumPedido INT, pCodProdu INT, pCantProdu INT, pPorcenDesc FLOAT, pMotivoDesc VARCHAR(15),  pOperacion VARCHAR(10))
 BEGIN
 DECLARE msgError VARCHAR(70) DEFAULT '';
+DECLARE Cod_Bodega_Sucu_Producto INT;
 	IF (pNumPedido IS NOT NULL) THEN
 		IF (pCodProdu IS NOT NULL) THEN
         
@@ -2071,8 +2082,14 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
 						IF (pPorcenDesc IS NOT NULL AND pPorcenDesc>=0) THEN
 							IF (pCantProdu IS NOT NULL AND pCantProdu>0) THEN
-								INSERT INTO PEDIDO_PRODUCTO(Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
-								VALUES(pNumPedido, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
+								SET Cod_Bodega_Sucu_Producto = (SELECT Cod_Bode_Sucu_Produ FROM PEDIDO WHERE Num_Pedido = pNumPedido);
+								IF (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = Cod_Bodega_Sucu_Producto AND Cantidad_Actual >=pCantProdu) THEN
+									INSERT INTO PEDIDO_PRODUCTO(Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
+									VALUES(pNumPedido, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
+								ELSE
+									SET msgError = 'La sucursal tiene menos productos que los solicitados';
+									SELECT msgError;
+								END IF;
 							ELSE
 								SET msgError = 'La cantidad de productos es inválida';
 								SELECT msgError;
@@ -2112,9 +2129,15 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
 							IF (pPorcenDesc IS NOT NULL AND pPorcenDesc>=0) THEN
 								IF (pCantProdu IS NOT NULL AND pCantProdu>0) THEN
-									UPDATE PEDIDO_PRODUCTO
-									SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
-									WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+									SET Cod_Bodega_Sucu_Producto = (SELECT Cod_Bode_Sucu_Produ FROM PEDIDO WHERE Num_Pedido = pNumPedido);
+									IF (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = Cod_Bodega_Sucu_Producto AND Cantidad_Actual >=pCantProdu) THEN
+										UPDATE PEDIDO_PRODUCTO
+										SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
+										WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+                                    ELSE
+										SET msgError = 'La sucursal tiene menos productos que los solicitados';
+										SELECT msgError;
+									END IF;
 								ELSE
 									SET msgError = 'La cantidad de productos es inválida, no se puede actualizar datos';
 									SELECT msgError;
