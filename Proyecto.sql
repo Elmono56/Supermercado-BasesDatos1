@@ -2105,26 +2105,99 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_PEDIDOxPRODU(pNumPedido INT, pCodProdu INT, pCantProdu INT, pPorcenDesc FLOAT, pMotivoDesc VARCHAR(15),  pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO PEDIDO_PRODUCTO(Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
-		VALUES(pNumPedido, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pNumPedido IS NOT NULL) THEN
+		IF (pCodProdu IS NOT NULL) THEN
+        
+			IF (pOperacion = 'CREATE') THEN
+				IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+						IF (pPorcenDesc IS NOT NULL AND pPorcenDesc>=0) THEN
+							IF (pCantProdu IS NOT NULL AND pCantProdu>0) THEN
+								INSERT INTO PEDIDO_PRODUCTO(Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
+								VALUES(pNumPedido, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
+							ELSE
+								SET msgError = 'La cantidad de productos es inválida';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'El porcentaje de descuento es inválido';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'El codigo de producto no existe';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El numero de pedido no existe';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'READ') THEN
-		SELECT Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc
-		FROM PEDIDO_PRODUCTO
-		WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
-  END IF;
+			IF (pOperacion = 'READ') THEN
+				IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+						SELECT Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc
+						FROM PEDIDO_PRODUCTO
+						WHERE Num_Pedido = pNumPedido AND Cod_Producto = pCodProdu;
+					ELSE
+						SET msgError = 'El codigo de producto no existe, no se puede realizar la busqueda';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El numero de pedido no existe, no se puede realizar la busqueda';
+					SELECT msgError;
+				END IF;
+			END IF;
 
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE PEDIDO_PRODUCTO
-		SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
-		WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
-	END IF;
-    
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM PEDIDO_PRODUCTO
-		WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+			IF (pOperacion = 'UPDATE')  THEN
+				IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+							IF (pPorcenDesc IS NOT NULL AND pPorcenDesc>=0) THEN
+								IF (pCantProdu IS NOT NULL AND pCantProdu>0) THEN
+									UPDATE PEDIDO_PRODUCTO
+									SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
+									WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+								ELSE
+									SET msgError = 'La cantidad de productos es inválida, no se puede actualizar datos';
+									SELECT msgError;
+								END IF;
+							ELSE
+								SET msgError = 'El porcentaje de descuento es inválido, no se puede actualizar datos';
+								SELECT msgError;
+							END IF;
+					ELSE
+						SET msgError = 'El codigo de producto no existe, no se puede actualizar datos';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El numero de pedido no existe, no se puede actualizar datos';
+					SELECT msgError;
+				END IF;
+			END IF;
+			
+			IF (pOperacion = 'DELETE') THEN
+				IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+							DELETE FROM PEDIDO_PRODUCTO
+							WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+					ELSE
+						SET msgError = 'No se puede eliminar, el codigo de producto no existe';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'No se puede eliminar, el numero de pedido no existe';
+					SELECT msgError;
+				END IF;
+			END IF;
+            
+        ELSE
+			SET msgError = 'El codigo de producto es vacío';
+			SELECT msgError;
+		END IF;
+	ELSE
+		SET msgError = 'El numero de pedido es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
