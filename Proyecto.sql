@@ -1398,28 +1398,86 @@ END;
 
 /*------------------------------------------------------------ FACTURA ------------------------------------------------------------*/
 delimiter //
-CREATE PROCEDURE CRUD_FACTURA(pNumFact INT, pFecFact DATE, pCodCliente INT, pCodEmpleado INT, pMetodoPago VARCHAR(15), pNumPedido INT, pOperacion VARCHAR(10))
+CREATE PROCEDURE CRUD_FACTURA(pNumFact INT, pFechaFact DATE, pCodCliente INT, pCodEmpleado INT, pMetodoPago VARCHAR(15), pNumPedido INT, pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO FACTURA(Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago, Num_Pedido)
-		VALUES(pNumFact, pFecFact, pCodCliente, pCodEmpleado, pMetodoPago,pNumPedido);
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pNumFact IS NOT NULL) THEN
+    
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM FACTURA WHERE Num_Factura = pNumFact) = 0) THEN
+				IF (pFechaFact IS NOT NULL) THEN
+					IF ((SELECT COUNT(*) FROM CLIENTE WHERE Cod_Cliente = pCodCliente) > 0) THEN
+						IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Empleado = pCodEmpleado) > 0) THEN
+							IF (pMetodoPago != '' AND pMetodoPago IS NOT NULL) THEN
+								IF ((SELECT COUNT(*) FROM PEDIDO WHERE Num_Pedido = pNumPedido) > 0) THEN
+									INSERT INTO FACTURA(Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago, Num_Pedido)
+									VALUES(pNumFact, pFechaFact, pCodCliente, pCodEmpleado, pMetodoPago,pNumPedido);
+								ELSE
+									SET msgError = 'El numero de pedido no existe';
+									SELECT msgError;
+								END IF;
+							ELSE
+								SET msgError = 'El metodo de pago ingresado es inválido';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'El codigo de empleado no existe';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'El codigo de cliente no existe';
+						SELECT msgError;
+                    END IF;
+				ELSE
+					SET msgError = 'La fecha de la factura es inválida';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El numero de factura ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+	
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM FACTURA WHERE Num_Factura = pNumFact) > 0) THEN
+				SELECT Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago, Num_Pedido
+				FROM FACTURA
+				WHERE Num_Factura = pNumFact;
+			ELSE
+				SET msgError = 'El numero de factura no existe, no se puede hacer la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
 
-	IF (pOperacion = 'READ') THEN
-		SELECT Num_Factura, Fecha_Factura, Cod_Cliente, Cod_Empleado, Metodo_Pago, Num_Pedido
-		FROM FACTURA
-		WHERE Num_Factura = pNumFact;
-  END IF;
-  
- IF (pOperacion = 'UPDATE')  THEN
-		UPDATE FACTURA
-		SET Metodo_Pago = IFNULL(pMetodoPago,Metodo_Pago)
-		WHERE Num_Factura = pNumFact;
-	END IF;
-  
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM FACTURA
-		WHERE Num_Factura = pNumFact;
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM FACTURA WHERE Num_Factura = pNumFact) > 0) THEN
+				IF (pMetodoPago IS NOT NULL) THEN
+					UPDATE FACTURA
+					SET Metodo_Pago = IFNULL(pMetodoPago,Metodo_Pago)
+					WHERE Num_Factura = pNumFact;
+				ELSE
+					SET msgError = 'El metodo de pago es inválido, no se puede actualizar';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El numero de factura no existe, no se puede actualizar';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM FACTURA WHERE Num_Factura = pNumFact) > 0) THEN
+				DELETE FROM FACTURA
+				WHERE Num_Factura = pNumFact;
+            ELSE
+				SET msgError = 'No se puede eliminar, el numero de factura no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El numero de factura está vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
