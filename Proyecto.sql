@@ -253,7 +253,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
     
 		IF (pOperacion = 'CREATE') THEN
 			IF ((SELECT COUNT(*) FROM PAIS WHERE Cod_Pais = pCodPais) = 0) THEN
-				IF (pNombrePais != '') THEN
+				IF (pNombrePais != '' AND pNombrePais IS NOT NULL) THEN
 					INSERT INTO PAIS(Cod_Pais,Nombre_Pais)
 					VALUES(pCodPais,pNombrePais);
 				ELSE
@@ -320,7 +320,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
     
 		IF (pOperacion = 'CREATE') THEN
 			IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Provincia = pCodProvincia) = 0) THEN
-				IF (pNombreProvincia != '') THEN
+				IF (pNombreProvincia != ''AND pNombreProvincia IS NOT NULL) THEN
 					IF ((SELECT COUNT(*) FROM PAIS WHERE Cod_Pais = pCodPais) > 0) THEN 
 						INSERT INTO PROVINCIA(Cod_Provincia, Nombre_Provincia, Cod_Pais)
 						VALUES(pCodProvincia, pNombreProvincia, pCodPais);
@@ -391,7 +391,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
     
 		IF (pOperacion = 'CREATE') THEN
 			IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) = 0) THEN
-				IF (pNombreCiudad != '') THEN
+				IF (pNombreCiudad != '' AND pNombreCiudad IS NOT NULL) THEN
 					IF ((SELECT COUNT(*) FROM PROVINCIA WHERE Cod_Provincia = pCodProvincia) > 0) THEN 
 						INSERT INTO CIUDAD(Cod_Ciudad, Nombre_Ciudad, Cod_Provincia)
 						VALUES(pCodCiudad, pNombreCiudad, pCodProvincia);
@@ -430,7 +430,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 				SELECT msgError;
 			END IF;
 		END IF;
-        
+		
 		IF (pOperacion = 'DELETE') THEN
 			IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN
 				IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Ciudad = pCodCiudad) = 0) THEN
@@ -467,12 +467,11 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_SUCURSAL(pCodSucursal INT, pNombreSucursal VARCHAR(40), pCodCiudad INT, pOperacion VARCHAR(10))
 BEGIN
-	DECLARE msgError VARCHAR(70) DEFAULT '';
 	IF (pCodSucursal IS NOT NULL) THEN
     
 		IF (pOperacion = 'CREATE') THEN
 			IF ((SELECT COUNT(*) FROM SUCURSAL WHERE Cod_Sucursal = pCodSucursal) = 0) THEN
-				IF (pNombreSucursal != '') THEN
+				IF (pNombreSucursal != '' AND pNombreSucursal IS NOT NULL) THEN
 					IF ((SELECT COUNT(*) FROM CIUDAD WHERE Cod_Ciudad = pCodCiudad) > 0) THEN 
 						INSERT INTO SUCURSAL(Cod_Sucursal, Nombre_Sucursal, Cod_Ciudad)
 						VALUES(pCodSucursal, pNombreSucursal, pCodCiudad);
@@ -543,26 +542,64 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_SEXO(pCodSexo INT, pDescripSexo VARCHAR(15), pOperacion VARCHAR(10))
 BEGIN
-	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO SEXO(Cod_Sexo, Descrip_Sexo)
-		VALUES(pCodSexo, pDescripSexo);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Sexo, Descrip_Sexo
-		FROM SEXO
-		WHERE Cod_Sexo = pCodSexo;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE SEXO
-		SET Descrip_Sexo = IFNULL(pDescripSexo, Descrip_Sexo)
-		WHERE Cod_Sexo = pCodSexo;
-	END IF;
+DECLARE msgError VARCHAR(70) DEFAULT '';
+	IF (pCodSexo IS NOT NULL) THEN
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM SEXO
-		WHERE Cod_Sexo = pCodSexo;
+		IF (pOperacion = 'CREATE') THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) = 0) THEN
+				IF (pDescripSexo != '' AND pDescripSexo IS NOT NULL) THEN
+					INSERT INTO SEXO(Cod_Sexo, Descrip_Sexo)
+					VALUES(pCodSexo, pDescripSexo);
+				ELSE
+					SET msgError = 'La descripción del sexo está vacía';
+					SELECT msgError;
+                END IF;
+			ELSE
+				SET msgError = 'El codigo de sexo ya existe';
+				SELECT msgError;
+            END IF;
+		END IF;
+
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+				SELECT Cod_Sexo, Descrip_Sexo
+				FROM SEXO
+				WHERE Cod_Sexo = pCodSexo;
+			ELSE
+				SET msgError = 'El codigo de sexo no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+				UPDATE SEXO
+				SET Descrip_Sexo = IFNULL( pDescripSexo, Descrip_Sexo)
+				WHERE Cod_Sexo = pCodSexo;
+			ELSE
+				SET msgError = 'El codigo de sexo no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM SEXO WHERE Cod_Sexo = pCodSexo) > 0) THEN
+				IF ((SELECT COUNT(*) FROM PERSONA WHERE Cod_Sexo = pCodSexo) = 0) THEN
+					DELETE FROM SEXO
+					WHERE Cod_Sexo = pCodSexo;
+				ELSE
+					SET msgError = 'No se puede eliminar, sexo asociado a persona';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de sexo no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+	ELSE
+		SET msgError = 'El codigo de sexo es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -605,7 +642,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
     
 		IF (pOperacion = 'CREATE') THEN
 			IF ((SELECT COUNT(*) FROM PUESTO_LABORAL WHERE Cod_Puesto_Laboral = pCodPuLaboral) = 0) THEN
-				IF (pDescPuLaboral != '') THEN
+				IF (pDescPuLaboral != '' AND pDescPuLaboral IS NOT NULL) THEN
 					IF ((pSalarioMe IS NOT NULL) AND (pSalarioMe >= 0 )) THEN
 						INSERT INTO PUESTO_LABORAL(Cod_Puesto_Laboral, Descrip_Pues_Lab, Salario_Mensual)
 						VALUES(pCodPuLaboral, pDescPuLaboral, pSalarioMe);
@@ -709,7 +746,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
     
 		IF (pOperacion = 'CREATE') THEN
 			IF ((SELECT COUNT(*) FROM TIPO_USUARIO WHERE Cod_Tipo_Usuario = pCodTipUsu) = 0) THEN
-				IF (pDescTipUsu != '') THEN
+				IF (pDescTipUsu != '' AND pDescTipUsu IS NOT NULL) THEN
 					INSERT INTO TIPO_USUARIO(Cod_Tipo_Usuario, Descrip_TipUsu)
 					VALUES(pCodTipUsu, pDescTipUsu);
 				ELSE
@@ -855,7 +892,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
     
 		IF (pOperacion = 'CREATE') THEN
 			IF ((SELECT COUNT(*) FROM IMPUESTO WHERE Cod_Impuesto = pCodImpu) = 0) THEN
-				IF (pDescImpu != '') THEN
+				IF (pDescImpu != ''  AND pDescImpu IS NOT NULL) THEN
 					IF ((pPorcImpu IS NOT NULL) AND (pPorcImpu >= 0 )) THEN
 						INSERT INTO IMPUESTO(Cod_Impuesto, Porcentaje_Imp, Descrip_Imp)
 						VALUES(pCodImpu, pPorcImpu, pDescImpu);
@@ -1014,7 +1051,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 	IF (pIdentPers IS NOT NULL) THEN
     
 		IF (pOperacion = 'CREATE') THEN
-			IF (pNumTel != '') THEN
+			IF (pNumTel != '' AND pNumTel IS NOT NULL) THEN
 				INSERT INTO TELEF_PERSO(Identificacion_Per, Num_Telef)
 				VALUES(pIdentPers, pNumTel);
 			ELSE
