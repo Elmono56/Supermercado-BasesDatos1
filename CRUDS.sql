@@ -1779,11 +1779,11 @@ END;
 //
 
 delimiter //
-CREATE PROCEDURE CRUD_PRODUCTO_EXPIRADO(pCodProdu INT, pNombProdu VARCHAR(50), pOperacion VARCHAR(10)) 
+CREATE PROCEDURE CRUD_PRODUCTO_EXPIRADO(pCodProdu INT, pNombProdu VARCHAR(50), pFecha DATE, pOperacion VARCHAR(10)) 
 BEGIN
 	IF (pOperacion = 'CREATE') THEN
 		INSERT INTO PRODUCTO_EXPIRADO (Cod_Producto,Nombre_Producto) 
-        VALUES (pCodProdu,pNombProdu);
+        VALUES (pCodProdu,pNombProdu,pFecha);
     END IF;
     
     IF (pOperacion = 'READ') THEN

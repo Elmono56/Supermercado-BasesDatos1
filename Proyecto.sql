@@ -242,6 +242,7 @@ CREATE TABLE `PRODUCTO_EXPIRADO` (
 	`Cod_Producto_Exp` INT NOT NULL AUTO_INCREMENT,
     `Cod_Producto` INT NOT NULL,
     `Nombre_Producto` VARCHAR(50) NOT NULL,
+    `Fecha_Expirado` DATE NOT NULL,
     PRIMARY KEY (`Cod_Producto_Exp`)
 );
 
