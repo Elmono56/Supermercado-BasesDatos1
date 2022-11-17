@@ -1632,26 +1632,70 @@ END;
 delimiter //
 CREATE PROCEDURE CRUD_BONOSEMP(pNumBono INT,  pCodEmpleado INT, pMontoBono FLOAT, pFechaBono DATE, pOperacion VARCHAR(10))
 BEGIN
+DECLARE msgError VARCHAR(70) DEFAULT '';
+
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO BONOS_EMPLEADO(Cod_Empleado, MontoBono, Fecha_Bono)
-		VALUES(pCodEmpleado, pMontoBono, pFechaBono);
+		IF ((SELECT COUNT(*) FROM EMPLEADO WHERE Cod_Empleado = pCodEmpleado) > 0) THEN
+			IF (pMontoBono IS NOT NULL AND pMontoBono>=0) THEN
+				IF (pFechaBono IS NOT NULL) THEN
+					INSERT INTO BONOS_EMPLEADO(Cod_Empleado, MontoBono, Fecha_Bono)
+					VALUES(pCodEmpleado, pMontoBono, pFechaBono);
+				ELSE
+					SET msgError = 'La fecha ingresada no es valida';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El monto de bono ingresado no es valido';
+				SELECT msgError;
+			END IF;
+		ELSE
+			SET msgError = 'El codigo de empleado no existe';
+			SELECT msgError;
+		END IF;
 	END IF;
 
-	IF (pOperacion = 'READ') THEN
-		SELECT Num_Bono, Cod_Empleado, MontoBono, Fecha_Bono
-		FROM BONOS_EMPLEADO
-		WHERE Num_Bono = pNumBono;
-  END IF;
+	IF (pCodEmpleado IS NOT NULL) THEN
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM BONOS_EMPLEADO WHERE Num_Bono = pNumBono) > 0) THEN
+				SELECT Num_Bono, Cod_Empleado, MontoBono, Fecha_Bono
+				FROM BONOS_EMPLEADO
+				WHERE Num_Bono = pNumBono;
+			ELSE
+				SET msgError = 'El codigo bono no existe, no se puede realizar la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
 
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE BONOS_EMPLEADO
-		SET  MontoBono=IFNULL(pMontoBono,MontoBono), Fecha_Bono=IFNULL(pFechaBono,Fecha_Bono)
-		WHERE Num_Bono = pNumBono;
-	END IF;
-    
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM BONOS_EMPLEADO
-		WHERE Num_Bono = pNumBono;
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM BONOS_EMPLEADO WHERE Num_Bono = pNumBono) > 0) THEN
+				IF (pMontoBono IS NOT NULL AND pMontoBono>=0) THEN
+					UPDATE BONOS_EMPLEADO
+					SET MontoBono=IFNULL(pMontoBono,MontoBono), Fecha_Bono=IFNULL(pFechaBono,Fecha_Bono)
+					WHERE Num_Bono = pNumBono;
+				ELSE
+					SET msgError = 'El monto de bono ingresado no es valido, no se puede actualizar datos';
+					SELECT msgError;
+				END IF;
+            ELSE
+				SET msgError = 'El codigo de bono no existe, no se puede actualizar datos';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM BONOS_EMPLEADO WHERE Num_Bono = pNumBono) > 0) THEN
+				DELETE FROM BONOS_EMPLEADO
+				WHERE Num_Bono = pNumBono;
+			ELSE
+				SET msgError = 'No se puede eliminar, el codigo de bono no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+    #el codigo de bono no es solicitado al crear el bono, se así se evita el mensaje
+	ELSEIF ((pCodEmpleado IS NOT NULL) AND (pOperacio!='CREATE')) THEN
+		SET msgError = 'El codigo de bono es vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
