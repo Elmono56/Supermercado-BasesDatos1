@@ -1910,27 +1910,91 @@ delimiter //
 CREATE PROCEDURE CRUD_BODEPROVEPRODU(pCodBodega INT, pCodProvee INT, pCodProdu INT, pPrecioVenta FLOAT, pCantBodega INT, 
 															pFechaProducc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
 BEGIN
+DECLARE msgError VARCHAR(70) DEFAULT '';
+    
 	IF (pOperacion = 'CREATE') THEN
-		INSERT INTO BODEGA_PROVEEDOR_PRODUCTO(Cod_Proveedor, Cod_Producto, Precio_Venta, Cantidad_En_Bodega, Fecha_Produccion, Fecha_Vencimiento)
-        VALUES(pCodProvee, pCodProdu, pPrecioVenta, pCantBodega, pFechaProducc, pFechaVenci);
-	END IF;
-
-	IF (pOperacion = 'READ') THEN
-		SELECT Cod_Bode_Provee_Produ, Cod_Proveedor, Cod_Producto, Precio_Venta, Cantidad_En_Bodega, Fecha_Produccion, Fecha_Vencimiento
-		FROM BODEGA_PROVEEDOR_PRODUCTO
-		WHERE Cod_Bode_Provee_Produ = pCodBodega;
-  END IF;
-
-	IF (pOperacion = 'UPDATE')  THEN
-		UPDATE BODEGA_PROVEEDOR_PRODUCTO
-		SET Cod_Proveedor=IFNULL(pCodProvee,Cod_Proveedor), Cod_Producto=IFNULL(pCodProdu,Cod_Producto), Precio_Venta=IFNULL(pPrecioVenta,Precio_Venta),
-					Cantidad_En_Bodega=IFNULL(pCantBodega,Cantidad_En_Bodega), Fecha_Produccion=IFNULL(pFechaProducc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
-		WHERE Cod_Bode_Provee_Produ = pCodBodega;
+		IF ((SELECT COUNT(*) FROM PROVEEDOR WHERE Cod_Proveedor = pCodProvee) > 0) THEN
+			IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
+				IF (pPrecioVenta IS NOT NULL AND pPrecioVenta >= 0) THEN
+					IF (pCantBodega IS NOT NULL AND pCantBodega >= 0) THEN
+						IF (pFechaProducc IS NOT NULL) THEN
+							IF (pFechaVenci IS NOT NULL) THEN
+								INSERT INTO BODEGA_PROVEEDOR_PRODUCTO(Cod_Proveedor, Cod_Producto, Precio_Venta, Cantidad_En_Bodega, Fecha_Produccion, Fecha_Vencimiento)
+								VALUES(pCodProvee, pCodProdu, pPrecioVenta, pCantBodega, pFechaProducc, pFechaVenci);
+							ELSE
+								SET msgError = 'La fecha de vencimiento es inválida';
+								SELECT msgError;
+							END IF;
+						ELSE
+							SET msgError = 'La fecha de producción es inválida';
+							SELECT msgError;
+						END IF;
+					ELSE
+						SET msgError = 'La cantidad en bodega es inválida';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El precio de venta es inválido';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El código de producto no existe';
+				SELECT msgError;
+			END IF;
+		ELSE
+			SET msgError = 'El código de proveedor no existe';
+			SELECT msgError;
+		END IF;
 	END IF;
     
-	IF (pOperacion = 'DELETE') THEN
-		DELETE FROM BODEGA_PROVEEDOR_PRODUCTO
-		WHERE Cod_Bode_Provee_Produ = pCodBodega;
+	IF (pCodBodega IS NOT NULL) THEN
+    
+		IF (pOperacion = 'READ') THEN
+			IF ((SELECT COUNT(*) FROM BODEGA_PROVEEDOR_PRODUCTO WHERE Cod_Bode_Provee_Produ = pCodBodega) > 0) THEN
+				SELECT Cod_Bode_Provee_Produ, Cod_Proveedor, Cod_Producto, Precio_Venta, Cantidad_En_Bodega, Fecha_Produccion, Fecha_Vencimiento
+				FROM BODEGA_PROVEEDOR_PRODUCTO
+				WHERE Cod_Bode_Provee_Produ = pCodBodega;
+			ELSE
+				SET msgError = 'El codigo de bodega de proveedor no existe,imposible hacer la busqueda';
+				SELECT msgError;
+			END IF;
+		END IF;
+
+		IF (pOperacion = 'UPDATE')  THEN
+			IF ((SELECT COUNT(*) FROM BODEGA_PROVEEDOR_PRODUCTO WHERE Cod_Bode_Provee_Produ = pCodBodega) > 0) THEN
+				IF (pPrecioVenta IS NOT NULL AND pPrecioVenta >= 0) THEN
+					IF (pCantBodega IS NOT NULL AND pCantBodega >= 0) THEN
+						UPDATE BODEGA_PROVEEDOR_PRODUCTO
+						SET Precio_Venta=IFNULL(pPrecioVenta,Precio_Venta), Cantidad_En_Bodega=IFNULL(pCantBodega,Cantidad_En_Bodega), Fecha_Produccion=IFNULL(pFechaProducc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
+						WHERE Cod_Bode_Provee_Produ = pCodBodega;
+					ELSE
+						SET msgError = 'La cantidad en bodega es inválida, no se puede actualizar';
+						SELECT msgError;
+					END IF;
+				ELSE
+					SET msgError = 'El precio de venta es inválido, no se puede actualizar';
+					SELECT msgError;
+				END IF;
+			ELSE
+				SET msgError = 'El código de bodega de proveedor no existe, no se puede actualizar';
+				SELECT msgError;
+			END IF;
+		END IF;
+        
+		IF (pOperacion = 'DELETE') THEN
+			IF ((SELECT COUNT(*) FROM BODEGA_PROVEEDOR_PRODUCTO WHERE Cod_Bode_Provee_Produ = pCodBodega) > 0) THEN
+				DELETE FROM BODEGA_PROVEEDOR_PRODUCTO
+				WHERE Cod_Bode_Provee_Produ = pCodBodega;
+            ELSE
+				SET msgError = 'No se puede eliminar, el código de bodega de proveedor no existe';
+				SELECT msgError;
+			END IF;
+		END IF;
+	
+    #el codigo de bodega no es solicitado al crear la bodega, así se evita el mensaje
+	ELSEIF ((pCodBodega IS NOT NULL) AND (pOperacion!='CREATE')) THEN
+		SET msgError = 'El código de bodega de proveedor está vacío';
+        SELECT msgError;
 	END IF;
 END;
 //
@@ -1999,8 +2063,8 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 			END IF;
 		END IF;
 	
-    #el codigo de bono no es solicitado al crear el bono, se así se evita el mensaje
-	ELSEIF ((pCodEmpleado IS NOT NULL) AND (pOperacio!='CREATE')) THEN
+    #el codigo de bono no es solicitado al crear el bono, así se evita el mensaje
+	ELSEIF ((pCodEmpleado IS NOT NULL) AND (pOperacion!='CREATE')) THEN
 		SET msgError = 'El codigo de bono es vacío';
         SELECT msgError;
 	END IF;
