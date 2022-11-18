@@ -1665,7 +1665,7 @@ END;
 /*------------------------------------------------------------ BODEGA_SUCURSAL_PRODUCTO ------------------------------------------------------------*/
 delimiter //
 CREATE PROCEDURE CRUD_BODESUCUPRODU(pCodBodega INT, pCodProdu INT, pCodSucursal INT, 
-										pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra INT, pCantActual INT, pFechaProducc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
+										pPrecioCompra FLOAT, pCodProveedor INT, pFechaCompra DATE, pCantActual INT, pFechaProducc DATE, pFechaVenci DATE, pOperacion VARCHAR(10))
 BEGIN
 DECLARE msgError VARCHAR(70) DEFAULT '';
     
@@ -1679,7 +1679,7 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 								IF (pFechaProducc IS NOT NULL) THEN
 									IF (pFechaVenci IS NOT NULL) THEN
 										INSERT INTO BODEGA_SUCURSAL_PRODUCTO(Cod_Producto, Cod_Sucursal, Precio_Compra, Cod_Proveedor, Fecha_Compra, Cantidad_Actual, Fecha_Produccion, Fecha_Vencimiento)
-										VALUES(pCodProdu, pCodSucursal, pPrecioCompra, pCodProveedor, pFechaCompra, pCantActual, pFechaProduc, pFechaVenci);
+										VALUES(pCodProdu, pCodSucursal, pPrecioCompra, pCodProveedor, pFechaCompra, pCantActual, pFechaProducc, pFechaVenci);
 									ELSE
 										SET msgError = 'La fecha de vencimiento es inválida';
 										SELECT msgError;
@@ -1727,12 +1727,12 @@ DECLARE msgError VARCHAR(70) DEFAULT '';
 			END IF;
 		END IF;
 
-		IF (pOperacion = 'UPDATE')  THEN
+		IF (pOperacion = 'UPDATE') THEN
 			IF ((SELECT COUNT(*) FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = pCodBodega) > 0) THEN
 				IF (pPrecioCompra IS NOT NULL AND pPrecioCompra >= 0) THEN
 					IF (pCantActual IS NOT NULL AND pCantActual >= 0) THEN
 						UPDATE BODEGA_SUCURSAL_PRODUCTO
-						SET Precio_Compra=IFNULL(pPrecioCompra,Precio_Compra),Fecha_Compra=IFNULL(pFechaCompra,Fecha_Compra), Cantidad_Actual=IFNULL(pCantActual,Cantidad_Actual), Fecha_Produccion=IFNULL(pFechaProduc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
+						SET Precio_Compra=IFNULL(pPrecioCompra,Precio_Compra),Fecha_Compra=IFNULL(pFechaCompra,Fecha_Compra), Cantidad_Actual=IFNULL(pCantActual,Cantidad_Actual), Fecha_Produccion=IFNULL(pFechaProducc,Fecha_Produccion), Fecha_Vencimiento=IFNULL(pFechaVenci,Fecha_Vencimiento)
 						WHERE Cod_Bode_Sucu_Produ = pCodBodega;
 					ELSE
 						SET msgError = 'La cantidad  actual es inválida, no se puede actualizar';
@@ -2326,6 +2326,8 @@ CREATE PROCEDURE CRUD_PEDIDOxPRODU(pNumPedido INT, pCodProdu INT, pCantProdu INT
 BEGIN
 DECLARE msgError VARCHAR(70) DEFAULT '';
 DECLARE Cod_Bodega_Sucu_Producto INT;
+DECLARE nuevo_Total INT;
+
 	IF (pNumPedido IS NOT NULL) THEN
 		IF (pCodProdu IS NOT NULL) THEN
         
@@ -2334,10 +2336,16 @@ DECLARE Cod_Bodega_Sucu_Producto INT;
 					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
 						IF (pPorcenDesc IS NOT NULL AND pPorcenDesc>=0) THEN
 							IF (pCantProdu IS NOT NULL AND pCantProdu>0) THEN
-								SET Cod_Bodega_Sucu_Producto = (SELECT Cod_Bode_Sucu_Produ FROM PEDIDO WHERE Num_Pedido = pNumPedido);
-								IF (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = Cod_Bodega_Sucu_Producto AND Cantidad_Actual >=pCantProdu) THEN
+								SET Cod_Bodega_Sucu_Producto = (SELECT Cod_Sucursal FROM PEDIDO WHERE Num_Pedido = pNumPedido);
+								IF (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE BODEGA_SUCURSAL_PRODUCTO.Cod_Sucursal = Cod_Bodega_Sucu_Producto AND
+										BODEGA_SUCURSAL_PRODUCTO.Cod_Producto = pCodProdu AND Cantidad_Actual >=pCantProdu) THEN
 									INSERT INTO PEDIDO_PRODUCTO(Num_Pedido, Cod_Producto, Cantidad_Producto, Porcentaje_Desc, Motivo_Desc)
 									VALUES(pNumPedido, pCodProdu, pCantProdu, pPorcenDesc, pMotivoDesc);
+                                    SET nuevo_Total = (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE BODEGA_SUCURSAL_PRODUCTO.Cod_Sucursal = Cod_Bodega_Sucu_Producto AND
+										BODEGA_SUCURSAL_PRODUCTO.Cod_Producto = pCodProdu) - pCantProdu;
+                                    CALL CRUD_BODESUCUPRODU ((SELECT COD_BODE_SUCU_PRODU FROM BODEGA_SUCURSAL_PRODUCTO WHERE pCodProdu = BODEGA_SUCURSAL_PRODUCTO.COD_PRODUCTO), 
+															null, null, (SELECT PRECIO_COMPRA FROM BODEGA_SUCURSAL_PRODUCTO WHERE pCodProdu = BODEGA_SUCURSAL_PRODUCTO.COD_PRODUCTO), 
+                                                            null, null, nuevo_Total, null, null, 'UPDATE');
 								ELSE
 									SET msgError = 'La sucursal tiene menos productos que los solicitados';
 									SELECT msgError;
@@ -2381,11 +2389,17 @@ DECLARE Cod_Bodega_Sucu_Producto INT;
 					IF ((SELECT COUNT(*) FROM PRODUCTO WHERE Cod_Producto = pCodProdu) > 0) THEN
 							IF (pPorcenDesc IS NOT NULL AND pPorcenDesc>=0) THEN
 								IF (pCantProdu IS NOT NULL AND pCantProdu>0) THEN
-									SET Cod_Bodega_Sucu_Producto = (SELECT Cod_Bode_Sucu_Produ FROM PEDIDO WHERE Num_Pedido = pNumPedido);
-									IF (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE Cod_Bode_Sucu_Produ = Cod_Bodega_Sucu_Producto AND Cantidad_Actual >=pCantProdu) THEN
+									SET Cod_Bodega_Sucu_Producto = (SELECT Cod_Sucursal FROM PEDIDO WHERE Num_Pedido = pNumPedido);
+									IF (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE BODEGA_SUCURSAL_PRODUCTO.Cod_Sucursal = Cod_Bodega_Sucu_Producto AND
+											BODEGA_SUCURSAL_PRODUCTO.Cod_Producto = pCodProdu AND Cantidad_Actual >=pCantProdu) THEN
 										UPDATE PEDIDO_PRODUCTO
 										SET Cantidad_Producto = IFNULL(pCantProdu,Cantidad_Producto), Porcentaje_Desc=IFNULL(pPorcenDesc,Porcentaje_Desc), Motivo_Desc=IFNULL(pMotivoDesc,Motivo_Desc)
 										WHERE Num_Pedido = pNumPedido AND Cod_Producto=pCodProdu;
+                                        SET nuevo_Total = (SELECT Cantidad_Actual FROM BODEGA_SUCURSAL_PRODUCTO WHERE BODEGA_SUCURSAL_PRODUCTO.Cod_Sucursal = Cod_Bodega_Sucu_Producto AND
+										BODEGA_SUCURSAL_PRODUCTO.Cod_Producto = pCodProdu) - pCantProdu;
+										CALL CRUD_BODESUCUPRODU ((SELECT COD_BODE_SUCU_PRODU FROM BODEGA_SUCURSAL_PRODUCTO WHERE pCodProdu = BODEGA_SUCURSAL_PRODUCTO.COD_PRODUCTO), 
+															null, null, (SELECT PRECIO_COMPRA FROM BODEGA_SUCURSAL_PRODUCTO WHERE pCodProdu = BODEGA_SUCURSAL_PRODUCTO.COD_PRODUCTO), 
+                                                            null, null, nuevo_Total, null, null, 'UPDATE');
                                     ELSE
 										SET msgError = 'La sucursal tiene menos productos que los solicitados';
 										SELECT msgError;
@@ -2513,13 +2527,18 @@ END;
 
 DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE TIEMPO QUE LLEVA TRABAJANDO UN EMPLEADO ------------------------------------------------------------*/
-CREATE PROCEDURE TIEMPO_LABORAL_EMPLEADO (pCodEmpleado INT)
+CREATE FUNCTION TIEMPO_LABORAL_EMPLEADO (pCodEmpleado INT) RETURNS INT
 BEGIN
+	DECLARE DIAS_LABORADOS INT;
     DECLARE Fecha_Actual DATE;
     SET Fecha_Actual = NOW();
-    SELECT DATEDIFF(Fecha_Actual, EMPLEADO.Fecha_Contratado)
+    
+    SELECT DATEDIFF(Fecha_Actual, EMPLEADO.Fecha_Contratado) AS 'TIEMPO LABORANDO'
+	INTO DIAS_LABORADOS
     FROM EMPLEADO
     WHERE pCodEmpleado = EMPLEADO.Cod_Empleado;
+    
+    RETURN DIAS_LABORADOS;
 END
 //
 
@@ -2540,7 +2559,7 @@ DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE EMPLEADOS DE UNA SUCURSAL ------------------------------------------------------------*/
 CREATE PROCEDURE EMPLEADOS_SUCURSAL (pCodSucursal INT)
 BEGIN
-	SELECT COUNT(EMPLEADO.Cod_Empleado)
+	SELECT SUCURSAL.NOMBRE_SUCURSAL AS 'SUCURSAL', COUNT(EMPLEADO.Cod_Empleado) AS 'CANTIDAD DE EMPLEADOS'
 	FROM EMPLEADO
 	INNER JOIN SUCURSAL ON EMPLEADO.Cod_Sucursal = SUCURSAL.Cod_Sucursal	
 	WHERE pCodSucursal = SUCURSAL.Cod_Sucursal;
@@ -2551,7 +2570,9 @@ DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE PRODUCTOS EN UNA SUCURSAL ------------------------------------------------------------*/
 CREATE PROCEDURE PRODUCTOS_SUCURSAL(pCodSucursal INT)
 BEGIN
-    SELECT SUM(BODEGA_SUCURSAL_PRODUCTO.Cantidad_Actual)
+	SELECT 
+		(SELECT NOMBRE_SUCURSAL FROM SUCURSAL WHERE pCodSucursal = SUCURSAL.COD_SUCURSAL) AS 'SUCURSAL', 
+		SUM(BODEGA_SUCURSAL_PRODUCTO.Cantidad_Actual) AS 'CANTIDAD DE PRODUCTOS'
 	FROM BODEGA_SUCURSAL_PRODUCTO
 	WHERE pCodSucursal = BODEGA_SUCURSAL_PRODUCTO.Cod_Sucursal;
 END
@@ -2561,12 +2582,14 @@ DELIMITER //
 /*------------------------------------------------------------ CANTIDAD DE SUCURSALES EN UN PAIS ------------------------------------------------------------*/
 CREATE PROCEDURE SUCURSALES_PAIS (pCodPais INT)
 BEGIN
-    SELECT COUNT(SUCURSAL.Cod_Sucursal) AS 'NUM_SUCURSALES'
+SELECT 
+	(SELECT NOMBRE_PAIS FROM PAIS WHERE pCodPais = PAIS.Cod_Pais) AS 'PAIS', 
+			COUNT(SUCURSAL.Cod_Sucursal) AS 'NUM_SUCURSALES'
 	FROM SUCURSAL
 	INNER JOIN CIUDAD ON SUCURSAL.Cod_Ciudad = CIUDAD.Cod_Ciudad
 	INNER JOIN PROVINCIA ON CIUDAD.Cod_Provincia = PROVINCIA.Cod_Provincia
 	INNER JOIN PAIS ON PROVINCIA.Cod_Pais = PAIS.Cod_Pais
-    WHERE pCodPais = PAIS.Cod_Pais;
+	WHERE pCodPais = PAIS.Cod_Pais;
 END
 //
 
@@ -2574,10 +2597,12 @@ DELIMITER //
 /*------------------------------------------------------------ DINERO GANADO POR HORA DE UN EMPLEADO ------------------------------------------------------------*/
 CREATE PROCEDURE EMPLEADO_DINERO_HORA (pCodEmpleado INT)
 BEGIN
-	SELECT PUESTO_LABORAL.Salario_Mensual/(EMPLEADO.Horas_Laborales*4) AS 'DINERO GANADO POR HORA' # horas_laborales son semanales *4 = mensuales
+	SELECT 
+			(SELECT NOMBRE FROM PERSONA INNER JOIN EMPLEADO ON PERSONA.IDENTIFICACION_PER = EMPLEADO.IDENTIFICACION_PER WHERE pCodEmpleado = EMPLEADO.Cod_Empleado) AS 'NOMBRE', 
+			PUESTO_LABORAL.Salario_Mensual/(EMPLEADO.Horas_Laborales*4) AS 'DINERO GANADO POR HORA' # horas_laborales son semanales *4 = mensuales
 	FROM EMPLEADO
 	INNER JOIN PUESTO_LABORAL 
-    ON EMPLEADO.Cod_Puesto_Laboral = PUESTO_LABORAL.Cod_Puesto_Laboral
+	ON EMPLEADO.Cod_Puesto_Laboral = PUESTO_LABORAL.Cod_Puesto_Laboral
 	WHERE pCodEmpleado = EMPLEADO.Cod_Empleado;
 END
 //
@@ -2726,7 +2751,7 @@ BEGIN
 		BODEGA_SUCURSAL_PRODUCTO.PRECIO_COMPRA
 	INTO PRODUCTO_VENTA
 	FROM
-		BODEGA_COMPRA
+		BODEGA_SUCURSAL_PRODUCTO
 	INNER JOIN
 		PRODUCTO
 	ON
@@ -2848,7 +2873,7 @@ DELIMITER //
 /*---------------------------------------------------- ASIGNA EL BONO A UN EMPLEADO -------------------------------------------------------*/
 CREATE PROCEDURE BONOS_EMPLEADO_ASIGNACION (pCOD_EMPLEADO INT, pMONTO_BONO FLOAT, pFECHA_BONO DATE)
 BEGIN
-	IF (CANTIDAD_FACTURAS_EMPLEADO(pCOD_EMPLEADO) > 20) THEN
+	IF (CANTIDAD_FACTURAS_EMPLEADO(pCOD_EMPLEADO) > 20) OR (TIEMPO_LABORAL_EMPLEADO(pCOD_EMPLEADO) >= 91) THEN	-- 91 dias equivale a 3 meses
         CALL CRUD_BONOSEMP (pCOD_EMPLEADO, pMONTO_BONO, pFECHA_BONO, 'CREATE');
 	END IF;
 END
@@ -2881,7 +2906,6 @@ BEGIN
     FROM PRODUCTO_EXPIRADO;
 END
 //
-
 
 DELIMITER //
 /*---------------------------------------------------- GANANCIA DE UN PRODUCTO -------------------------------------------------------*/
@@ -3097,25 +3121,29 @@ call CRUD_ESTADOP(1,  'En espera', 'CREATE');
 call CRUD_ESTADOP(2,  'Completado', 'CREATE');
 call CRUD_ESTADOP(3,  'Cancelado', 'CREATE');
 
-call CRUD_PEDIDO (1001, "2022-10-15", 260, 1, 1, 'CREATE');
-call CRUD_PEDIDO (1011, "2022-10-15", 260, 2, 1, 'CREATE');
-call CRUD_PEDIDO (1021, "2022-08-12", 260, 2, 1, 'CREATE');
-call CRUD_PEDIDO (1031, "2022-08-15", 260, 1, 1, 'CREATE');
-call CRUD_PEDIDO (1041, "2022-08-02", 260, 3, 1, 'CREATE');
+call CRUD_PEDIDO (1001, "2022-10-15", 260, 1, 1, 111, 'CREATE');
+call CRUD_PEDIDO (1011, "2022-10-15", 260, 2, 1, 111, 'CREATE');
+call CRUD_PEDIDO (1021, "2022-08-12", 260, 2, 1, 111, 'CREATE');
+call CRUD_PEDIDO (1031, "2022-08-15", 260, 1, 1, 111, 'CREATE');
+call CRUD_PEDIDO (1041, "2022-08-02", 260, 3, 1, 111, 'CREATE');
 
-call CRUD_PEDIDO (2001, "2022-12-03", 250, 3, 0, 'CREATE');
-call CRUD_PEDIDO (1051, "2022-12-06", 250, 3, 1, 'CREATE');
-call CRUD_PEDIDO (2011, "2022-12-05", 250, 2, 0, 'CREATE');
-call CRUD_PEDIDO (2021, "2023-02-08", 250, 1, 0, 'CREATE');
-call CRUD_PEDIDO (1061, "2023-01-15", 250, 1, 1, 'CREATE');
+call CRUD_PEDIDO (2001, "2022-12-03", 250, 3, 0, 111, 'CREATE');
+call CRUD_PEDIDO (1051, "2022-12-06", 250, 3, 1, 111, 'CREATE');
+call CRUD_PEDIDO (2011, "2022-12-05", 250, 2, 0, 111, 'CREATE');
+call CRUD_PEDIDO (2021, "2023-02-08", 250, 1, 0, 111, 'CREATE');
+call CRUD_PEDIDO (1061, "2023-01-15", 250, 1, 1, 111, 'CREATE');
 
-call CRUD_PEDIDO (2031, "2023-01-12", 270, 1, 0, 'CREATE');
-call CRUD_PEDIDO (2041, "2023-03-11", 270, 1, 0, 'CREATE');
-call CRUD_PEDIDO (1071, "2023-03-15", 270, 1, 1, 'CREATE');
-call CRUD_PEDIDO (1081, "2023-06-15", 270, 3, 1, 'CREATE');
-call CRUD_PEDIDO (1091, "2023-11-08", 270, 3, 1, 'CREATE');
-call CRUD_PEDIDO (1101, "2023-08-11", 270, 1, 1, 'CREATE');
-
+call CRUD_PEDIDO (2031, "2023-01-12", 270, 1, 0, 111, 'CREATE');
+call CRUD_PEDIDO (2041, "2023-03-11", 270, 1, 0, 111, 'CREATE');
+call CRUD_PEDIDO (1071, "2023-03-15", 270, 1, 1, 111, 'CREATE');
+call CRUD_PEDIDO (1081, "2023-06-15", 270, 3, 1, 111, 'CREATE');
+call CRUD_PEDIDO (1091, "2023-11-08", 270, 3, 1, 111, 'CREATE');
+call CRUD_PEDIDO (1101, "2023-08-11", 270, 1, 1, 111, 'CREATE');
+/*
+call CRUD_PEDIDO (2051, "2023-09-10", 260, 1, 1, 111, 'CREATE');
+call CRUD_PEDIDOxPRODU (2051, 413, 2, 0, "No", 'CREATE');
+call CRUD_FACTURA (576218, "2022-11-20", 250, 2000, 'Cheque', 2051, 'CREATE');
+*/
 call CRUD_PEDIDOxPRODU (1001, 111, 2, 0, "No", 'CREATE');
 call CRUD_PEDIDOxPRODU (1001, 112, 3, 0, "No", 'CREATE');
 call CRUD_PEDIDOxPRODU (1001, 331, 1, 0, "No", 'CREATE');
